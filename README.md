@@ -1,3 +1,4 @@
+```
 server/
 ├── src/
 │   ├── main.cpp
@@ -17,3 +18,4 @@ client/
 ├── ui/                   (Tkinter/Qt/консоль)
 ├── storage/              (локальное хранилище)
 └── config.ini
+```
