@@ -4,7 +4,7 @@ server/
 │   ├── main.cpp
 │   ├── network/          (TCP-сервер, сессии)
 │   ├── routing/          (маршрутизация)
-│   ├── database/         (SQLite/PostgreSQL)
+│   ├── database/         (своя датабаза)
 │   ├── crypto/           (интерфейс ICrypto, реализации для хешей)
 │   └── config/           (парсер настроек)
 ├── CMakeLists.txt
