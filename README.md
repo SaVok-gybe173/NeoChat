@@ -4,7 +4,7 @@ server/
 │   ├── main.cpp
 │   ├── network/              (TCP-сервер, сессии)
 |   |   ├── Session.hpp       (класс для создания сессии)
-|   |   └── platform.hpp      (реализация кроссплатформенности для Wingows и Linux)
+|   |   └── platform.hpp      (реализация кроссплатформенности для Windows и Linux)
 │   ├── routing/              (маршрутизация)
 │   ├── database/             (своя БД)
 |   |   ├── IDatabase.hpp     (класс кастомной БД)
