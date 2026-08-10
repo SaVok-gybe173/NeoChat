@@ -1,11 +1,13 @@
-import flet as ft
-from core.server import SERVERS, addServer, Server, updateServer, configStoregeServer
+from storege.server import SERVERS, addServer, Server, updateServer, configStoregeServer
 from language import LAN, getLan
-import threading
+from typing import Callable
+
+import flet as ft
+
 
 class ServerMenu:
-    def __init__(self):
-        pass
+    def __init__(self, setScene: Callable):
+        self.setScene = setScene # для смены индекса сценны
 
     def __call__(self, page: ft.Page):
         self.page = page
