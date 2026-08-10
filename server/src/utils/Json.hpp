@@ -28,6 +28,43 @@ class Json {
     Json(const std::vector<Json>& v) : type(JsonType::Array), arrayValue(v) {}
     Json(const std::map<std::string, Json>& v) : type(JsonType::Object), objectValue(v) {}
     Json(JsonType t) : type(t) {}
+    Json(const Json& other) = default;
+    Json(Json&& other) = default;
+    // --- operator= для примитивов ---
+    Json& operator=(const Json& other) = default;
+    Json& operator=(Json&& other) = default;
+    Json& operator=(std::nullptr_t) {
+        type = JsonType::Null;
+        boolValue = false; numberValue = 0.0; stringValue.clear();
+        arrayValue.clear(); objectValue.clear();
+        return *this;
+    }
+    Json& operator=(bool v) {
+        type = JsonType::Bool; boolValue = v;
+        numberValue = 0.0; stringValue.clear(); arrayValue.clear(); objectValue.clear();
+        return *this;
+    }
+    Json& operator=(int v) { return operator=(static_cast<long long>(v)); }
+    Json& operator=(long long v) {
+        type = JsonType::Number; numberValue = static_cast<double>(v);
+        boolValue = false; stringValue.clear(); arrayValue.clear(); objectValue.clear();
+        return *this;
+    }
+    Json& operator=(double v) {
+        type = JsonType::Number; numberValue = v;
+        boolValue = false; stringValue.clear(); arrayValue.clear(); objectValue.clear();
+        return *this;
+    }
+    Json& operator=(const std::string& v) {
+        type = JsonType::String; stringValue = v;
+        boolValue = false; numberValue = 0.0; arrayValue.clear(); objectValue.clear();
+        return *this;
+    }
+    Json& operator=(const char* v) {
+        type = JsonType::String; stringValue = v;
+        boolValue = false; numberValue = 0.0; arrayValue.clear(); objectValue.clear();
+        return *this;
+    }
     static Json parse(const std::string& text) {
         Parser p(text);
         return p.parse();
@@ -47,7 +84,7 @@ class Json {
     int getInt() const { return static_cast<int>(numberValue); }
     long long getLongLong() const { return static_cast<long long>(numberValue); }
     const std::string& getString() const { return stringValue; }
-    const std::vector<Json>& getArray() const { return arrayValue; }
+    std::vector<Json>& getArray() { return arrayValue; }
     const std::map<std::string, Json>& getObject() const { return objectValue; }
     Json& operator[](const std::string& key) {
         type = JsonType::Object;
@@ -69,7 +106,7 @@ class Json {
         if(type != JsonType::Array || idx >= arrayValue.size()) return nullJson;
         return arrayValue[idx];
     }
-    bool contains(const std::string& key) {
+    bool contains(const std::string& key) const {
         return type == JsonType::Object && objectValue.count(key);
     }
     void push_back(const Json& val) {
