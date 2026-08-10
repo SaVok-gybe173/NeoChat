@@ -16,7 +16,7 @@ class Session : public std::enable_shared_from_this<Session> {
     void start();
     void stop();
     bool deliver(const Json& message);
-    void setUsername(const std::string username);
+    void setUsername(const std::string& username);
     std::string getUsername() const;
     private:
     void run();
