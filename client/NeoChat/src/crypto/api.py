@@ -1,5 +1,5 @@
 import requests
-from ping3 import ping
+from ping3 import ping, EXCEPTIONS
 
 def getName(ip: str, port: int) -> str:
     return f"{ip}:{port}"
@@ -13,4 +13,4 @@ def getRegion(ip: str) -> str:
     return data.get("country", 'null')
 
 def getMode(ip: str, port: int) -> str:
-    return "Chat"
+    return ip

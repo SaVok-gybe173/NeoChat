@@ -1,5 +1,5 @@
 import flet as ft
-from core.server import SERVERS, addServer, Server
+from core.server import SERVERS, addServer, Server, updateServer, configStoregeServer
 from language import LAN, getLan
 import threading
 
@@ -26,13 +26,14 @@ class ServerMenu:
         def status_label(status):
             return {"online": getLan("server", "online"), "offline": getLan("server", "offline"), "maintenance": getLan("server", "maintenance")}.get(status, status)
     
-        def toggle_favorite(srv):
+        def toggle_favorite(srv): # звездочка
             def handler(e):
                 srv.favorite = not srv.favorite
+                configStoregeServer(srv)
                 render_list()
             return handler
     
-        def connect(srv):
+        def connect(srv): # подключение
             def handler(e):
                 page.show_dialog(
                     ft.SnackBar(ft.Text(f"{getLan("server", "connecting-to")} «{srv.name}»..."), bgcolor="#1d9e75")
@@ -103,7 +104,7 @@ class ServerMenu:
                 ),
             )
     
-        def render_list():
+        def render_list(): # обновление списка
             filtered = [
                 s for s in state["servers"]
                 if state["query"].lower() in s.name.lower()
@@ -143,7 +144,8 @@ class ServerMenu:
             state["sort"] = e.control.value
             render_list()
     
-        def refresh(e):
+        def refresh(e): # обновление списка серверов
+            updateServer()
             for s in state["servers"]:
                 if s.status == "online":
                     s.ping = max(10, s.ping)
@@ -151,25 +153,26 @@ class ServerMenu:
             page.show_dialog(ft.SnackBar(ft.Text(getLan("server", "list-servers-updated"))))
             render_list()
         
-        def quick_connect(e):
+        def quick_connect(e): # автоподключение
             online = [s for s in state["servers"] if s.status == "online"]
             if online:
                 best = min(online, key=lambda s: s.ping)
                 page.show_dialog(ft.SnackBar(ft.Text(f"{getLan("server", "autoconnecting-to")} «{best.name}» ({best.ping} мс)"), bgcolor="#1d9e75"))
     
-        def add_by_ip(e):
-            def close_dialog(ev):
+        def add_by_ip(e): # виджет поверх экрана для добаления сервера
+            def close_dialog(ev): # закрытие
                 page.pop_dialog()
     
-            def confirm_add(ev):
+            def confirm_add(ev): # добаление
                 ip = ip_field.value.strip()
+                page.pop_dialog()
                 if ip:
                     try:
-                        threading.Thread(target=addServer, args=ip.split(":"), daemon=True, name=ip).start()
-                    except:
-                        pass
+                        addServer(*ip.split(":"))
+                    except Exception as e:
+                        print("Ошибка:", e)
                     render_list()
-                page.pop_dialog()
+                
             
             ip_field = ft.TextField(label=getLan("server", "server-IP-address"), hint_text="127.0.0.1:8080", autofocus=True)
             dlg = ft.AlertDialog(
@@ -177,7 +180,8 @@ class ServerMenu:
                 content=ip_field,
                 actions=[
                     ft.TextButton(getLan("Cancellation"), on_click=close_dialog),
-                    ft.FilledButton(getLan("Add"), on_click=confirm_add),
+                    #ft.FilledButton(getLan("Add"), on_click= (lambda e: threading.Thread(target=confirm_add, args=(e,), daemon=True).start()) ),
+                    ft.FilledButton(getLan("Add"), on_click=confirm_add ),
                 ],
             )
             page.show_dialog(dlg)
@@ -195,18 +199,19 @@ class ServerMenu:
         region_dropdown = ft.Dropdown(
             value=getLan("server", "all-regions"),
             width=150,
-            options=[ft.DropdownOption(key=r, text=r) for r in [getLan("server", "all-regions"), "EU", "NA", "Asia"]],
+            options=[ft.DropdownOption(key=r, text=r) for r in [getLan("server", "all-regions"), "EU", "RU", "null"]],
             on_select=on_region_change,
         )
     
         sort_dropdown = ft.Dropdown(
             value=getLan("server", "ping"),
             width=150,
-            options=[ft.DropdownOption(key=s, text=s) for s in [getLan("server", "ping"), getLan("server", "Popularity"), getLan("server", "Alphabet")]],
+            options=[ft.DropdownOption(key=s, text=s) for s in [getLan("server", "ping"), getLan("server", "Alphabet")]],
             on_select=on_sort_change,
         )
-    
-        refresh_button = ft.IconButton(icon=ft.Icons.REFRESH, tooltip=getLan("server", "update-list"), on_click=refresh)
+        
+        #refresh_button = ft.IconButton(icon=ft.Icons.REFRESH, tooltip=getLan("server", "update-list"), on_click=lambda e: threading.Thread(target=refresh, daemon=True, args=(e,)).start() )
+        refresh_button = ft.IconButton(icon=ft.Icons.REFRESH, tooltip=getLan("server", "update-list"), on_click=refresh )
     
         page.add(
             ft.Text(getLan("server", "Server-selection"), size=22, weight=ft.FontWeight.W_500),
