@@ -2,12 +2,12 @@
 server/
 ├── src/
 │   ├── main.cpp
+|   ├── platform.hpp          (реализация кроссплатформенности для Windows и Linux)
 │   ├── network/              (TCP-сервер, сессии)
 |   |   ├── Server.cpp        (реализация функций из Server.hpp)
 |   |   ├── Server.hpp        (класс сервера)
 |   |   ├── Session.cpp       (реализация функций из Session.hpp)
-|   |   ├── Session.hpp       (класс для создания сессии)
-|   |   └── platform.hpp      (реализация кроссплатформенности для Windows и Linux)
+|   |   └── Session.hpp       (класс для создания сессии)
 │   ├── routing/              (маршрутизация)
 |   |   ├── Router.hpp
 |   |   ├── Router.cpp
