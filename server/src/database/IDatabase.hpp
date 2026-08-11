@@ -19,6 +19,7 @@ struct Message {
     bool encrypted = false;
     std::string ephemeralKey;
     std::string nonce;
+    std::string salt;
 };
 
 class IDatabase {
