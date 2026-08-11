@@ -138,6 +138,7 @@ Json Handlers::handleSendMessage(const Json& req) {
                 push["encrypted"] = msg.encrypted;
                 push["ephemeral_key"] = msg.ephemeralKey;
                 push["nonce"] = msg.nonce;
+                push["salt"] = msg.salt;
                 if(s->deliver(push)) {
                     deliveredOnline = true;
                 }
@@ -188,6 +189,7 @@ Json Handlers::handleGetMessages(const Json& req) {
         obj["encrypted"] = m.encrypted;
         obj["ephemeral_key"] = m.ephemeralKey;
         obj["nonce"] = m.nonce;
+        obj["salt"] = m.salt;
         arr.push_back(obj);
     }
     res["status"] = "ok";
