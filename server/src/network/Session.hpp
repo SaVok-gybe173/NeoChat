@@ -11,7 +11,7 @@ class Router;
 class Session : public std::enable_shared_from_this<Session> {
     public:
     using CloseCallback = std::function<void(std::shared_ptr<Session>)>;
-    Session(int socket, Router* router, CloseCallback onClose);
+    Session(PlatformSocket socket, Router* router, CloseCallback onClose);
     ~Session();
     void start();
     void stop();
