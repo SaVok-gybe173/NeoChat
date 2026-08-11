@@ -8,9 +8,6 @@ public:
     std::string hash(const std::string& input) override;
 
 private:
-    void transform(const uint8_t* data);
+    void transform(uint32_t h[8], const uint8_t* data);
     std::string toHex(const std::vector<uint8_t>& bytes);
-
-    uint32_t h[8];
-    uint64_t bitLen;
 };
