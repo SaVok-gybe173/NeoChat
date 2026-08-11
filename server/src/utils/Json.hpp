@@ -7,16 +7,19 @@
 #include <cctype>
 #include <iomanip>
 #include <cmath>
+#include <cstdio>
 
 enum class JsonType { Null, Bool, Number, String, Array, Object };
+
 class Json {
-    public:
+public:
     JsonType type = JsonType::Null;
     bool boolValue = false;
     double numberValue = 0.0;
     std::string stringValue;
     std::vector<Json> arrayValue;
     std::map<std::string, Json> objectValue;
+
     Json() = default;
     Json(std::nullptr_t) : type(JsonType::Null) {}
     Json(bool v) : type(JsonType::Bool), boolValue(v) {}
@@ -28,11 +31,13 @@ class Json {
     Json(const std::vector<Json>& v) : type(JsonType::Array), arrayValue(v) {}
     Json(const std::map<std::string, Json>& v) : type(JsonType::Object), objectValue(v) {}
     Json(JsonType t) : type(t) {}
+
     Json(const Json& other) = default;
     Json(Json&& other) = default;
-    // --- operator= для примитивов ---
+
     Json& operator=(const Json& other) = default;
     Json& operator=(Json&& other) = default;
+
     Json& operator=(std::nullptr_t) {
         type = JsonType::Null;
         boolValue = false; numberValue = 0.0; stringValue.clear();
@@ -65,27 +70,32 @@ class Json {
         boolValue = false; numberValue = 0.0; arrayValue.clear(); objectValue.clear();
         return *this;
     }
+
     static Json parse(const std::string& text) {
         Parser p(text);
         return p.parse();
     }
+
     std::string dump(int indent = -1) const {
-        if(indent >= 0) return dumpImpl(0, indent);
+        if (indent >= 0) return dumpImpl(0, indent);
         return dumpCompact();
     }
+
     bool isNull() const { return type == JsonType::Null; }
     bool isBool() const { return type == JsonType::Bool; }
     bool isNumber() const { return type == JsonType::Number; }
     bool isString() const { return type == JsonType::String; }
     bool isArray() const { return type == JsonType::Array; }
     bool isObject() const { return type == JsonType::Object; }
+
     bool getBool() const { return boolValue; }
     double getNumber() const { return numberValue; }
     int getInt() const { return static_cast<int>(numberValue); }
     long long getLongLong() const { return static_cast<long long>(numberValue); }
     const std::string& getString() const { return stringValue; }
-    std::vector<Json>& getArray() { return arrayValue; }
+    const std::vector<Json>& getArray() const { return arrayValue; }
     const std::map<std::string, Json>& getObject() const { return objectValue; }
+
     Json& operator[](const std::string& key) {
         type = JsonType::Object;
         return objectValue[key];
@@ -93,46 +103,100 @@ class Json {
     const Json& operator[](const std::string& key) const {
         static const Json nullJson;
         auto it = objectValue.find(key);
-        if(it != objectValue.end()) return it->second;
+        if (it != objectValue.end()) return it->second;
         return nullJson;
     }
     Json& operator[](size_t idx) {
-        if(type != JsonType::Array) type = JsonType::Array;
-        if(idx >= arrayValue.size()) arrayValue.resize(idx + 1);
+        if (type != JsonType::Array) type = JsonType::Array;
+        if (idx >= arrayValue.size()) arrayValue.resize(idx + 1);
         return arrayValue[idx];
     }
     const Json& operator[](size_t idx) const {
         static const Json nullJson;
-        if(type != JsonType::Array || idx >= arrayValue.size()) return nullJson;
+        if (type != JsonType::Array || idx >= arrayValue.size()) return nullJson;
         return arrayValue[idx];
     }
+
     bool contains(const std::string& key) const {
         return type == JsonType::Object && objectValue.count(key);
     }
+
     void push_back(const Json& val) {
-        if(type != JsonType::Array) type = JsonType::Array;
+        if (type != JsonType::Array) type = JsonType::Array;
         arrayValue.push_back(val);
     }
+
     size_t size() const {
-        if(type == JsonType::Array) return arrayValue.size();
-        if(type == JsonType::Object) return objectValue.size();
+        if (type == JsonType::Array) return arrayValue.size();
+        if (type == JsonType::Object) return objectValue.size();
         return 0;
     }
-    private:
+
+private:
     struct Parser {
         const std::string& s;
         size_t pos = 0;
         Parser(const std::string& str) : s(str) {}
+
         void skip() {
-            while(pos < s.size() && (s[pos] == ' ' || s[pos] == '\t' || s[pos] == '\n' || s[pos] == '\r')) pos++;
+            while (pos < s.size() && (s[pos] == ' ' || s[pos] == '\t' || s[pos] == '\n' || s[pos] == '\r')) ++pos;
         }
+
+        Json parse() {
+            skip();
+            if (pos >= s.size()) throw std::runtime_error("Empty JSON");
+            char c = s[pos];
+            if (c == '{') return parseObject();
+            if (c == '[') return parseArray();
+            if (c == '"') return parseString();
+            if (c == 't' || c == 'f') return parseBool();
+            if (c == 'n') return parseNull();
+            return parseNumber();
+        }
+
+        Json parseObject() {
+            Json obj(JsonType::Object);
+            ++pos;
+            while (true) {
+                skip();
+                if (pos < s.size() && s[pos] == '}') { ++pos; break; }
+                if (s[pos] != '"') throw std::runtime_error("Expected string key");
+                std::string key = parseString().stringValue;
+                skip();
+                if (pos >= s.size() || s[pos] != ':') throw std::runtime_error("Expected :");
+                ++pos;
+                Json val = parse();
+                obj.objectValue[key] = val;
+                skip();
+                if (pos < s.size() && s[pos] == ',') { ++pos; continue; }
+                if (pos < s.size() && s[pos] == '}') { ++pos; break; }
+                throw std::runtime_error("Expected , or }");
+            }
+            return obj;
+        }
+
+        Json parseArray() {
+            Json arr(JsonType::Array);
+            ++pos;
+            while (true) {
+                skip();
+                if (pos < s.size() && s[pos] == ']') { ++pos; break; }
+                arr.arrayValue.push_back(parse());
+                skip();
+                if (pos < s.size() && s[pos] == ',') { ++pos; continue; }
+                if (pos < s.size() && s[pos] == ']') { ++pos; break; }
+                throw std::runtime_error("Expected , or ]");
+            }
+            return arr;
+        }
+
         Json parseString() {
-            pos++;
+            ++pos;
             std::string result;
-            while(pos < s.size() && s[pos] != '"') {
-                if(s[pos] == '\\') {
-                    pos++;
-                    if(pos >= s.size()) throw std::runtime_error("Invalid escape");
+            while (pos < s.size() && s[pos] != '"') {
+                if (s[pos] == '\\') {
+                    ++pos;
+                    if (pos >= s.size()) throw std::runtime_error("Invalid escape");
                     switch (s[pos]) {
                         case '"': result += '"'; break;
                         case '\\': result += '\\'; break;
@@ -147,90 +211,49 @@ class Json {
                 } else {
                     result += s[pos];
                 }
-                pos++;
+                ++pos;
             }
-            if(pos >= s.size()) throw std::runtime_error("Unterminated string");
-            pos++;
+            if (pos >= s.size()) throw std::runtime_error("Unterminated string");
+            ++pos;
             return Json(result);
         }
-        Json parseObject() {
-            Json obj(JsonType::Object);
-            pos++;
-            while(true) {
-                skip();
-                if(pos < s.size() && s[pos] == '}') { ++pos; break; }
-                if(s[pos] != '"') throw std::runtime_error("Expected string key");
-                std::string key = parseString().stringValue;
-                skip();
-                if(pos >= s.size() || s[pos] != ':') throw std::runtime_error("Expected: ");
-                pos++;
-                Json val = parse();
-                obj.objectValue[key] = val;
-                skip();
-                if(pos < s.size() && s[pos] == ',') { pos++; continue; }
-                if(pos < s.size() && s[pos] == '}') { pos++; break; }
-                throw std::runtime_error("Expected , or }");
-            }
-            return obj;
-        }
-        Json parseArray() {
-            Json arr(JsonType::Array);
-            pos++;
-            while(true) {
-                skip();
-                if(pos < s.size() && s[pos] == ']') { pos++; break; }
-                arr.arrayValue.push_back(parse());
-                skip();
-                if(pos < s.size() && s[pos] == ',') { pos++; continue; }
-                if(pos < s.size() && s[pos] == ']') { pos++; break; }
-                throw std::runtime_error("Expected , or ]");
-            }
-            return arr;
-        }
+
         Json parseBool() {
-            if(s.substr(pos, 4) == "true") { pos += 4; return Json(true); }
-            if(s.substr(pos, 5) == "false") { pos += 5; return Json(false); }
+            if (s.substr(pos, 4) == "true") { pos += 4; return Json(true); }
+            if (s.substr(pos, 5) == "false") { pos += 5; return Json(false); }
             throw std::runtime_error("Invalid bool");
         }
+
         Json parseNull() {
-            if(s.substr(pos, 4) == "null") { pos += 4; return Json(); }
+            if (s.substr(pos, 4) == "null") { pos += 4; return Json(); }
             throw std::runtime_error("Invalid null");
         }
+
         Json parseNumber() {
             size_t start = pos;
-            if(s[pos] == '-') pos++;
-            while(pos < s.size() && std::isdigit(s[pos])) pos++;
-            if(pos < s.size() && s[pos] == '.') {
-                pos++;
-                while(pos < s.size() && std::isdigit(s[pos])) pos++;
+            if (s[pos] == '-') ++pos;
+            while (pos < s.size() && std::isdigit(s[pos])) ++pos;
+            if (pos < s.size() && s[pos] == '.') {
+                ++pos;
+                while (pos < s.size() && std::isdigit(s[pos])) ++pos;
             }
-            if(pos < s.size() && (s[pos] == 'e' || s[pos] == 'E')) {
-                pos++;
-                if(pos < s.size() && (s[pos] == '+' || s[pos] == '-')) pos++;
-                while(pos < s.size() && std::isdigit(s[pos])) pos++;
+            if (pos < s.size() && (s[pos] == 'e' || s[pos] == 'E')) {
+                ++pos;
+                if (pos < s.size() && (s[pos] == '+' || s[pos] == '-')) ++pos;
+                while (pos < s.size() && std::isdigit(s[pos])) ++pos;
             }
             double val = std::stod(s.substr(start, pos - start));
             return Json(val);
         }
-        Json parse() {
-            skip();
-            if(pos >= s.size()) throw std::runtime_error("Empty JSON");
-            char c = s[pos];
-            if(c == '{') return parseObject();
-            if(c == '[') return parseArray();
-            if(c == '"') return parseString();
-            if(c == 't' || c == 'f') return parseBool();
-            if(c == 'n') return parseNull();
-            return parseNumber();
-        }
     };
+
     std::string dumpCompact() const {
-        switch(type) {
+        switch (type) {
             case JsonType::Null: return "null";
             case JsonType::Bool: return boolValue ? "true" : "false";
             case JsonType::Number: {
                 std::ostringstream oss;
-                if(numberValue == std::floor(numberValue)) {
+                if (numberValue == std::floor(numberValue)) {
                     oss << static_cast<long long>(numberValue);
                 } else {
                     oss << numberValue;
@@ -240,8 +263,8 @@ class Json {
             case JsonType::String: return "\"" + escape(stringValue) + "\"";
             case JsonType::Array: {
                 std::string res = "[";
-                for(size_t i = 0; i < arrayValue.size(); i++) {
-                    if(i) res += ",";
+                for (size_t i = 0; i < arrayValue.size(); ++i) {
+                    if (i) res += ",";
                     res += arrayValue[i].dumpCompact();
                 }
                 return res + "]";
@@ -249,8 +272,8 @@ class Json {
             case JsonType::Object: {
                 std::string res = "{";
                 bool first = true;
-                for(const auto& [k, v] : objectValue) {
-                    if(!first) res += ",";
+                for (const auto& [k, v] : objectValue) {
+                    if (!first) res += ",";
                     first = false;
                     res += "\"" + escape(k) + "\":" + v.dumpCompact();
                 }
@@ -259,9 +282,10 @@ class Json {
         }
         return "null";
     }
+
     std::string dumpImpl(int depth, int indent) const {
         std::string prefix(depth * indent, ' ');
-        switch(type) {
+        switch (type) {
             case JsonType::Null: return "null";
             case JsonType::Bool: return boolValue ? "true" : "false";
             case JsonType::Number: {
@@ -298,10 +322,11 @@ class Json {
         }
         return "null";
     }
+
     static std::string escape(const std::string& s) {
         std::string r;
-        for(char c : s) {
-            switch(c) {
+        for (unsigned char c : s) {
+            switch (c) {
                 case '"': r += "\\\""; break;
                 case '\\': r += "\\\\"; break;
                 case '\b': r += "\\b"; break;
@@ -309,7 +334,14 @@ class Json {
                 case '\n': r += "\\n"; break;
                 case '\r': r += "\\r"; break;
                 case '\t': r += "\\t"; break;
-                default: r += c; break;
+                default:
+                    if (c < 0x20) {
+                        char buf[7];
+                        std::snprintf(buf, sizeof(buf), "\\u%04x", c);
+                        r += buf;
+                    } else {
+                        r += static_cast<char>(c);
+                    }
             }
         }
         return r;
