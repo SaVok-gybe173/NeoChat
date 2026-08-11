@@ -49,10 +49,10 @@ class EntranceServer:
             
     
         def on_forgot_click(e): # сброс пароля
-            pass
+            self.setScene(3)
     
         def on_register_click(e): # регестрация
-            pass
+            self.setScene(2)
 
         login_button = ft.Button(
                 content=ft.Text(

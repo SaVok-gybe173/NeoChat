@@ -62,4 +62,4 @@ def loadLans(path: str) -> None:
         loadLan(os.path.join(path, i))
 
 loadLans(LAN_PATH)
-setLanguage("us") # стандартный язык
+setLanguage("ru") # стандартный язык

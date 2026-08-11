@@ -19,8 +19,9 @@ class RegistrationMenu:
     def __call__(self, page: ft.Page):
         self.page = page
 
-        def on_login_click(e): pass # Переход на экран входа
-
+        def on_login_click(e): # Переход на экран входа
+            self.setScene(1)
+            
         def on_register_click(e): # запершение регестрации
             if not all([login_field.value, email_field.value, password_field.value, confirm_field.value]): # Проверка заполненности
                 error_text.value = "Заполните все поля"
