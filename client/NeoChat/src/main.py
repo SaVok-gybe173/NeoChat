@@ -28,7 +28,7 @@ class Main:
         self.scens.append(RecoveryMenu(self.setScene))
         self.scens.append(CodMenu(self.setScene))
 
-        self.scens[4](page)
+        self.scens[self.index](page)
 
     def setScene(self, index):          # смена сценны
         self.index = index              # 

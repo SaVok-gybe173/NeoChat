@@ -1,4 +1,4 @@
-from storege.server import SERVERS, addServer, Server, updateServer, configStoregeServer
+from storage.server import SERVERS, addServer, Server, updateServer, configStoregeServer
 from language import LAN, getLan
 from typing import Callable
 
