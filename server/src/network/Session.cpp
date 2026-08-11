@@ -33,7 +33,7 @@ void Session::stop() {
     if (socket_ != INVALID_PLATFORM_SOCKET) {
         shutdown(socket_, SHUT_RDWR);
         CLOSE_SOCKET(socket_);
-        socket_ = -1;
+        socket_ = INVALID_PLATFORM_SOCKET;
     }
 }
 

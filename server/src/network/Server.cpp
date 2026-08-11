@@ -62,7 +62,7 @@ void Server::stop() {
 
     if (listenSocket_ != INVALID_PLATFORM_SOCKET) {
         CLOSE_SOCKET(listenSocket_);
-        listenSocket_ = -1;
+        listenSocket_ = INVALID_PLATFORM_SOCKET;
     }
 
     std::unordered_map<PlatformSocket, std::shared_ptr<Session>> copy;
@@ -83,7 +83,7 @@ void Server::run() {
         sockaddr_in clientAddr{};
         socklen_t addrLen = sizeof(clientAddr);
         PlatformSocket clientSocket = accept(listenSocket_, reinterpret_cast<sockaddr*>(&clientAddr), &addrLen);
-        if (listenSocket_ == INVALID_PLATFORM_SOCKET) {
+        if (clientSocket_ == INVALID_PLATFORM_SOCKET) {
             if (ERRNO == ERR_EINTR) continue;
             if (running_) std::cerr << "accept failed (code: " << ERRNO << ")\n";
             break;
