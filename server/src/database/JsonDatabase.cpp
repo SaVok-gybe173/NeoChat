@@ -4,16 +4,41 @@
 #include <algorithm>
 #include <chrono>
 #include <optional>
+#include <filesystem>
 
-JsonDatabase::JsonDatabase(const std::string& usersFile, const std::string& messagesFile) : usersFile_(usersFile), messagesFile_(messagesFile) {}
+JsonDatabase::JsonDatabase(const std::string& usersFile, const std::string& messagesFile)
+    : usersFile_(usersFile), messagesFile_(messagesFile) {}
+
+JsonDatabase::~JsonDatabase() {
+    stopFlush_ = true;
+    if (flushThread_.joinable()) flushThread_.join();
+    flush();
+}
+
 bool JsonDatabase::init() {
     loadUsers();
     loadMessages();
+    flushThread_ = std::thread([this]() {
+        while (!stopFlush_) {
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+            flush();
+        }
+    });
     return true;
 }
+
+void JsonDatabase::flush() {
+    if (dirtyUsers_.exchange(false)) {
+        saveUsers();
+    }
+    if (dirtyMessages_.exchange(false)) {
+        saveMessages();
+    }
+}
+
 void JsonDatabase::loadUsers() {
     std::ifstream f(usersFile_);
-    if(!f.is_open()) {
+    if (!f.is_open()) {
         usersJson_ = Json(std::map<std::string, Json>{{"users", Json(std::vector<Json>())}});
         return;
     }
@@ -24,17 +49,24 @@ void JsonDatabase::loadUsers() {
     } catch (...) {
         usersJson_ = Json(std::map<std::string, Json>{{"users", Json(std::vector<Json>())}});
     }
-    if(!usersJson_.contains("users")) {
+    if (!usersJson_.contains("users")) {
         usersJson_["users"] = Json(std::vector<Json>());
     }
 }
+
 void JsonDatabase::saveUsers() {
-    std::ofstream f(usersFile_);
-    if(f.is_open()) f << usersJson_.dump(2);
+    std::string tmp = usersFile_ + ".tmp";
+    std::ofstream f(tmp);
+    if (f.is_open()) {
+        f << usersJson_.dump(2);
+        f.close();
+        std::filesystem::rename(tmp, usersFile_);
+    }
 }
+
 void JsonDatabase::loadMessages() {
     std::ifstream f(messagesFile_);
-    if(!f.is_open()) {
+    if (!f.is_open()) {
         messagesJson_ = Json(std::map<std::string, Json>{{"messages", Json(std::vector<Json>())}});
         return;
     }
@@ -45,67 +77,78 @@ void JsonDatabase::loadMessages() {
     } catch (...) {
         messagesJson_ = Json(std::map<std::string, Json>{{"messages", Json(std::vector<Json>())}});
     }
-    if(!messagesJson_.contains("messages")) {
+    if (!messagesJson_.contains("messages")) {
         messagesJson_["messages"] = Json(std::vector<Json>());
     }
     nextMsgId_ = 1;
-    for(const auto& m : messagesJson_["messages"].getArray()) {
-        long long id = m[id].getLongLong();
-        if(id >= nextMsgId_) nextMsgId_ = id + 1;
+    for (const auto& m : messagesJson_["messages"].arrayValue) {
+        long long id = m["id"].getLongLong();
+        if (id >= nextMsgId_) nextMsgId_ = id + 1;
     }
 }
+
 void JsonDatabase::saveMessages() {
-    std::ofstream f(messagesFile_);
-    if(f.is_open()) f << messagesJson_.dump(2);
+    std::string tmp = messagesFile_ + ".tmp";
+    std::ofstream f(tmp);
+    if (f.is_open()) {
+        f << messagesJson_.dump(2);
+        f.close();
+        std::filesystem::rename(tmp, messagesFile_);
+    }
 }
+
 bool JsonDatabase::addUser(const User& user) {
     std::lock_guard<std::mutex> lock(mutex_);
-    for(const auto& u : usersJson_["users"].getArray()) {
-        if(u["username"].getString() == user.username) return false;
+    for (const auto& u : usersJson_["users"].arrayValue) {
+        if (u["username"].getString() == user.username) return false;
     }
     Json obj;
     obj["username"] = user.username;
     obj["passwordHash"] = user.passwordHash;
     obj["salt"] = user.salt;
     usersJson_["users"].push_back(obj);
-    saveUsers();
+    dirtyUsers_ = true;
     return true;
 }
+
 std::optional<User> JsonDatabase::getUser(const std::string& username) {
     std::lock_guard<std::mutex> lock(mutex_);
-    for(const auto& u : usersJson_["users"].getArray()) {
-        if(u["username"].getString() == username) {
+    for (const auto& u : usersJson_["users"].arrayValue) {
+        if (u["username"].getString() == username) {
             User res;
             res.username = u["username"].getString();
             res.passwordHash = u["passwordHash"].getString();
             res.salt = u["salt"].getString();
-            if(u.contains("public_key")) res.publicKey = u["public_key"].getString();
+            if (u.contains("public_key")) res.publicKey = u["public_key"].getString();
             return res;
         }
     }
     return std::nullopt;
 }
+
 bool JsonDatabase::updateUserPublicKey(const std::string& username, const std::string& publicKey) {
     std::lock_guard<std::mutex> lock(mutex_);
-    for(auto& u : usersJson_["users"].getArray()) {
-        if(u["username"].getString() == username) {
+    for (auto& u : usersJson_["users"].arrayValue) {
+        if (u["username"].getString() == username) {
             u["public_key"] = publicKey;
-            saveUsers();
+            dirtyUsers_ = true;
             return true;
         }
     }
     return false;
 }
+
 std::optional<std::string> JsonDatabase::getUserPublicKey(const std::string& username) {
     std::lock_guard<std::mutex> lock(mutex_);
-    for(const auto& u : usersJson_["users"].getArray()) {
-        if(u["username"].getString() == username) {
-            if(u.contains("public_key")) return u["public_key"].getString();
+    for (const auto& u : usersJson_["users"].arrayValue) {
+        if (u["username"].getString() == username) {
+            if (u.contains("public_key")) return u["public_key"].getString();
             break;
         }
     }
     return std::nullopt;
 }
+
 long long JsonDatabase::addMessage(const Message& msg) {
     std::lock_guard<std::mutex> lock(mutex_);
     long long id = nextMsgId_++;
@@ -119,16 +162,17 @@ long long JsonDatabase::addMessage(const Message& msg) {
     obj["ephemeral_key"] = msg.ephemeralKey;
     obj["nonce"] = msg.nonce;
     messagesJson_["messages"].push_back(obj);
-    saveMessages();
+    dirtyMessages_ = true;
     return id;
 }
+
 std::vector<Message> JsonDatabase::getMessages(const std::string& user1, const std::string& user2, int limit, int offset) {
     std::lock_guard<std::mutex> lock(mutex_);
     std::vector<Message> res;
-    for(const auto& m : messagesJson_["messages"].getArray()) {
+    for (const auto& m : messagesJson_["messages"].arrayValue) {
         std::string f = m["from"].getString();
         std::string t = m["to"].getString();
-        if((f == user1 && t == user2) || (f == user2 && t == user1)) {
+        if ((f == user1 && t == user2) || (f == user2 && t == user1)) {
             Message msg;
             msg.id = m["id"].getLongLong();
             msg.from = f;
@@ -154,10 +198,11 @@ std::vector<Message> JsonDatabase::getMessages(const std::string& user1, const s
     }
     return res;
 }
+
 std::vector<std::string> JsonDatabase::getAllUsers() {
     std::lock_guard<std::mutex> lock(mutex_);
     std::vector<std::string> res;
-    for (const auto& u : usersJson_["users"].getArray()) {
+    for (const auto& u : usersJson_["users"].arrayValue) {
         res.push_back(u["username"].getString());
     }
     return res;
