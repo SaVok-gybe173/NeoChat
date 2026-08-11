@@ -83,7 +83,7 @@ void Server::run() {
         sockaddr_in clientAddr{};
         socklen_t addrLen = sizeof(clientAddr);
         PlatformSocket clientSocket = accept(listenSocket_, reinterpret_cast<sockaddr*>(&clientAddr), &addrLen);
-        if (clientSocket_ == INVALID_PLATFORM_SOCKET) {
+        if (clientSocket == INVALID_PLATFORM_SOCKET) {
             if (ERRNO == ERR_EINTR) continue;
             if (running_) std::cerr << "accept failed (code: " << ERRNO << ")\n";
             break;
