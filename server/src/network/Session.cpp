@@ -6,24 +6,27 @@
 #include <cstring>
 
 Session::Session(PlatformSocket socket, Router* router, CloseCallback onClose) : socket_(socket), router_(router), running_(false), onClose_(std::move(onClose)) {}
+
 Session::~Session() {
     stop();
-    if (thread_.joinable()) {
-        thread_.join();
-    }
 }
+
 void Session::setUsername(const std::string& username) {
     std::lock_guard<std::mutex> lock(usernameMutex_);
     username_ = username;
 }
+
 std::string Session::getUsername() const {
     std::lock_guard<std::mutex> lock(usernameMutex_);
     return username_;
 }
+
 void Session::start() {
     running_ = true;
     thread_ = std::thread(&Session::run, this);
+    thread_.detach();
 }
+
 void Session::stop() {
     bool expected = true;
     if (!running_.compare_exchange_strong(expected, false)) return;
@@ -33,21 +36,26 @@ void Session::stop() {
         socket_ = -1;
     }
 }
+
 bool Session::deliver(const Json& message) {
     std::lock_guard<std::mutex> lock(sendMutex_);
     return sendJson(message.dump());
 }
+
 void Session::run() {
+    auto self = shared_from_this();
     while (running_) {
         uint32_t netLen = 0;
         if (!readAll(reinterpret_cast<uint8_t*>(&netLen), 4)) break;
         uint32_t len = ntohl(netLen);
         if (len == 0 || len > 10 * 1024 * 1024) break;
+
         std::string data(len, '\0');
         if (!readAll(reinterpret_cast<uint8_t*>(&data[0]), len)) break;
+
         try {
             Json req = Json::parse(data);
-            Json resp = router_->route(req, shared_from_this());
+            Json resp = router_->route(req, self);
             std::string respStr = resp.dump();
             std::lock_guard<std::mutex> lock(sendMutex_);
             if (!sendJson(respStr)) break;
@@ -60,21 +68,33 @@ void Session::run() {
         }
     }
     if (onClose_) {
-        onClose_(shared_from_this());
+        onClose_(self);
     }
 }
+
 bool Session::readAll(uint8_t* buffer, size_t len) {
     size_t total = 0;
-    while(total < len) {
+    while (total < len) {
         ssize_t r = recv(socket_, reinterpret_cast<char*>(buffer + total), len - total, 0);
-        if(r <= 0) return false;
+        if (r <= 0) return false;
         total += static_cast<size_t>(r);
     }
     return true;
 }
+
+bool Session::sendAll(const uint8_t* buffer, size_t len) {
+    size_t total = 0;
+    while (total < len) {
+        ssize_t sent = send(socket_, reinterpret_cast<const char*>(buffer + total), len - total, MSG_NOSIGNAL);
+        if (sent <= 0) return false;
+        total += static_cast<size_t>(sent);
+    }
+    return true;
+}
+
 bool Session::sendJson(const std::string& jsonStr) {
     uint32_t netLen = htonl(static_cast<uint32_t>(jsonStr.size()));
-    if(send(socket_, reinterpret_cast<const char*>(&netLen), 4, MSG_NOSIGNAL) != 4) return false;
-    if(send(socket_, jsonStr.c_str(), static_cast<int>(jsonStr.size()), MSG_NOSIGNAL) != static_cast<int>(jsonStr.size())) return false;
+    if (!sendAll(reinterpret_cast<const uint8_t*>(&netLen), 4)) return false;
+    if (!sendAll(reinterpret_cast<const uint8_t*>(jsonStr.data()), jsonStr.size())) return false;
     return true;
 }
