@@ -1,6 +1,6 @@
 from typing import Callable
 from language import getLan
-from storage import getChats, getActiveChatId, Chat, getMyProfile, getView
+from storage import getChats, getActiveChatId, Chat, getMyProfile, getView, getIsNarrow, setIsNarrow
 import flet as ft
 
 BG = "#0e1013"
@@ -33,9 +33,14 @@ class ChatMenu:
         self.main_holder = ft.Container(expand=True)
         self.root_row = ft.Row(controls=[self.sidebar_holder, self.main_holder], spacing=0, expand=True)
 
+        # открытие чата
         def open_chat():
             pass
 
+        # открытие профиля
+        def open_profile(kto: str):
+            pass
+        
         def avatar(initials: Chat, size=36, is_group=False): # получение аватарки
             content = (
                 ft.Icon(icon=ft.Icons.GROUPS, size=size * 0.5, color="#ffffff")
@@ -151,10 +156,37 @@ class ChatMenu:
                     expand=True,
                 ),
                 bgcolor=PANEL,
-                border=ft.Border.only(right=ft.BorderSide(1, BORDER)) if not state["is_narrow"] else None,
-                width=300 if not state["is_narrow"] else None,
-                expand=True if state["is_narrow"] else False,
+                border=ft.Border.only(right=ft.BorderSide(1, BORDER)) if not getIsNarrow() else None,
+                width=300 if not getIsNarrow() else None,
+                expand=True if getIsNarrow() else False,
             )
         page.add(self.root_row)
 
-        build_sidebar()
+        def refresh():
+            self.sidebar_holder.content = build_sidebar()
+            #self.main_holder.content = build_main()
+    
+            showing_main_only = getView() in ("chat", "profile")
+            if getIsNarrow():
+                self.sidebar_holder.visible = not showing_main_only
+                self.sidebar_holder.expand = not showing_main_only
+                self.main_holder.visible = showing_main_only
+                self.main_holder.expand = showing_main_only
+            else:
+                self.sidebar_holder.visible = True
+                self.sidebar_holder.expand = False
+                self.main_holder.visible = True
+                self.main_holder.expand = True
+
+        def on_resize(e=None):
+            w = page.width or 1000
+            h = page.height or 700
+            narrow = h > w
+            if narrow != getIsNarrow():
+                setIsNarrow(narrow)
+                refresh()
+
+            page.update()
+
+        page.on_resize = on_resize
+        on_resize()

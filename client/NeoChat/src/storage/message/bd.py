@@ -39,7 +39,7 @@ def getView() -> str:   # "empty" - ничего | "chat" - чаты | "profile"
 
 def setView(view: str):
     global _view
-    _view: str = view
+    _view = view
 
 def loadView():
     global _profile_target
@@ -65,7 +65,7 @@ def getActiveChatId() -> int | None:
 
 def setActiveChatId(id:  int | None) -> None:
     global _active_chat_id
-    _active_chat_id: int | None = id
+    _active_chat_id = id
 
 def loadActiveChatId():
     global _active_chat_id
@@ -90,13 +90,14 @@ def getChats() -> list[Chat]:
 
 def _createChats() -> None:
     global _chats
-    _chats: list[Chat] = []
+    _chats = []
 
 def loadChats():
     global _chats
     pass # дописать
 
 # базовые значения
+setView("empty")
 setMyProfile(Chat(0, "null"))
 setIsNarrow(False)
 setActiveChatId(None)
