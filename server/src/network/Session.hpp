@@ -8,8 +8,9 @@
 #include "utils/Json.hpp"
 
 class Router;
+
 class Session : public std::enable_shared_from_this<Session> {
-    public:
+public:
     using CloseCallback = std::function<void(std::shared_ptr<Session>)>;
     Session(PlatformSocket socket, Router* router, CloseCallback onClose);
     ~Session();
@@ -18,11 +19,15 @@ class Session : public std::enable_shared_from_this<Session> {
     bool deliver(const Json& message);
     void setUsername(const std::string& username);
     std::string getUsername() const;
-    private:
+    PlatformSocket getSocket() const { return socket_; }
+
+private:
     void run();
     bool readAll(uint8_t* buffer, size_t len);
+    bool sendAll(const uint8_t* buffer, size_t len);
     bool sendJson(const std::string& jsonStr);
-    int socket_;
+
+    PlatformSocket socket_;
     Router* router_;
     std::thread thread_;
     std::atomic<bool> running_;
