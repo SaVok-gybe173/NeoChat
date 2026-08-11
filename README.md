@@ -38,10 +38,12 @@ client/
 |   |   ├── core/
 |   |   |   └── __info__.py
 |   |   ├── crypto/
+|   |   |   ├── __init__.py
 |   |   |   └── encrypted.py
 |   |   ├── network/
+|   |   |   ├── __init__.py
 |   |   |   ├── api.py
-|   |   |   └── socket.py
+|   |   |   └── client_socket.py
 |   |   ├── storage/
 |   |   |   ├── message/
 |   |   |   |   ├── bd.py
@@ -61,6 +63,7 @@ client/
 |   ├── .gitignore
 |   ├── pyproject.toml
 |   └── README.md
+├── __init__.py
 ├── neochat-logo.ico
 ├── neochat-logo.jpg
 └── neochat-logo.png
