@@ -13,26 +13,23 @@ class Session;
 class Handlers {
 public:
     Handlers(IDatabase* db, ICrypto* hasher);
-
     Json handleRegister(const Json& req);
     Json handleLogin(const Json& req, std::shared_ptr<Session> session);
     Json handleSendMessage(const Json& req);
     Json handleGetMessages(const Json& req);
     Json handleGetUsers(const Json& req);
     Json handleLogout(const Json& req, std::shared_ptr<Session> session);
-
+    Json handleUploadKey(const Json& req);
+    Json handleGetKey(const Json& req);
     void userConnected(const std::string& username, std::shared_ptr<Session> session);
     void userDisconnected(const std::string& username);
-
 private:
     std::string generateToken();
     std::string hashPassword(const std::string& password, const std::string& salt);
-
     IDatabase* db_;
     ICrypto* hasher_;
-    std::map<std::string, std::string> sessions_; // token -> username
+    std::map<std::string, std::string> authTokens_;
     std::mutex sessionMutex_;
-    
     std::unordered_map<std::string, std::weak_ptr<Session>> activeUsers_;
     std::mutex activeUsersMutex_;
 };
