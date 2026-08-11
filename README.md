@@ -3,9 +3,9 @@ server/
 ├── src/
 │   ├── main.cpp
 │   ├── network/              (TCP-сервер, сессии)
-|   |   ├── Server.cpp
-|   |   ├── Server.hpp
-|   |   ├── Session.cpp
+|   |   ├── Server.cpp        (реализация функций из Server.hpp)
+|   |   ├── Server.hpp        (класс сервера)
+|   |   ├── Session.cpp       (реализация функций из Session.hpp)
 |   |   ├── Session.hpp       (класс для создания сессии)
 |   |   └── platform.hpp      (реализация кроссплатформенности для Windows и Linux)
 │   ├── routing/              (маршрутизация)
