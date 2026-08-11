@@ -8,13 +8,3 @@ def _get_path():
     global _path_bd
     return _path_bd
 
-class Chat:
-    id: int
-    name: str
-    messages: list = field(default_factory=list)
-    username: str|None = None
-
-    icon: None | str = None
-
-class MessBD:
-    chats: list

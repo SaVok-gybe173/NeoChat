@@ -1,5 +1,9 @@
+from typing import Dict
+from config import LAN_PATH
+import json
+import os
 
-LAN = {
+LAN: Dict[str, Dict[str, Dict[str, str] | str]] = {
     "ru":{
         "Cancellation": "Отмена",
         "Add": "Добавить",
@@ -28,18 +32,34 @@ LAN = {
     }
 }
 
+# функция которая устанавливает глабальный язык
 def setLanguage(lan: str) -> None:
     global _lan
     _lan = lan
 
+# функция которая возвращает глобальный язык
 def getLanguage() -> str:
     global _lan
     return _lan
 
-def getLan(*names):
+# функция которая пинимает путь к переводу и возвращает этот перевод
+def getLan(*names: tuple[str]) -> str | Dict[str, str]:
     lan = LAN[getLanguage()]
     for i in names:
         lan = lan[i]
     return lan
 
-setLanguage("ru")
+# функция которая загружает язык из json
+def loadLan(file: str) -> None:
+    with open(file, "r", encoding="utf-8") as f:
+        data: Dict = json.loads(f.read())
+    lan = data.get("language") or data.get('lan')
+    LAN[lan] = data[lan]
+
+# функция для загрузки всех языков из спика файлов
+def loadLans(path: str) -> None:
+    for i in os.listdir(path):
+        loadLan(os.path.join(path, i))
+
+loadLans(LAN_PATH)
+setLanguage("us") # стандартный язык
