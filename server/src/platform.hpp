@@ -11,10 +11,12 @@
     #define ERR_EINTR           WSAEINTR
     #define MSG_NOSIGNAL        0
     #define SHUT_RDWR           SD_BOTH
-    #define SHUT_WR             SD_SEND
-    #define SHUT_RD             SD_RECEIVE
 
+    #ifndef _SSIZE_T_DEFINED
+    #define _SSIZE_T_DEFINED
     typedef int ssize_t;
+    #endif
+    typedef SOCKET PlatformSocket;
     typedef int socklen_t;
 
     #define SETSOCKOPT_PTR(ptr) (reinterpret_cast<const char*>(ptr))
@@ -35,6 +37,7 @@
     #define ERRNO               errno
     #define ERR_EINTR           EINTR
     #define SETSOCKOPT_PTR(ptr) (ptr)
+    typedef int PlatformSocket;
 
     inline bool init_winsock() { return true; }
     inline void cleanup_winsock() {}
