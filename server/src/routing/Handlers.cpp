@@ -122,6 +122,7 @@ Json Handlers::handleSendMessage(const Json& req) {
     msg.encrypted = req.contains("encrypted") ? req["encrypted"].getBool() : false;
     msg.ephemeralKey = req.contains("ephemeral_key") ? req["ephemeral_key"].getString() : "";
     msg.nonce = req.contains("nonce") ? req["nonce"].getString() : "";
+    msg.salt = req.contains("salt") ? req["salt"].getString() : "";
     bool deliveredOnline = false;
     {
         std::lock_guard<std::mutex> lock(activeUsersMutex_);
