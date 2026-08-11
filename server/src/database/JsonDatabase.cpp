@@ -161,6 +161,7 @@ long long JsonDatabase::addMessage(const Message& msg) {
     obj["encrypted"] = msg.encrypted;
     obj["ephemeral_key"] = msg.ephemeralKey;
     obj["nonce"] = msg.nonce;
+    obj["salt"] = msg.salt;
     messagesJson_["messages"].push_back(obj);
     dirtyMessages_ = true;
     return id;
@@ -182,6 +183,7 @@ std::vector<Message> JsonDatabase::getMessages(const std::string& user1, const s
             msg.encrypted = m.contains("encrypted") ? m["encrypted"].getBool() : false;
             msg.ephemeralKey = m.contains("ephemeral_key") ? m["ephemeral_key"].getString() : "";
             msg.nonce = m.contains("nonce") ? m["nonce"].getString() : "";
+            msg.salt = m.contains("salt") ? m["salt"].getString() : "";
             res.push_back(msg);
         }
     }
