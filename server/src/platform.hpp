@@ -17,6 +17,7 @@
     typedef int ssize_t;
     #endif
     typedef SOCKET PlatformSocket;
+    #define INVALID_PLATFORM_SOCKET INVALID_SOCKET
     typedef int socklen_t;
 
     #define SETSOCKOPT_PTR(ptr) (reinterpret_cast<const char*>(ptr))
@@ -38,6 +39,7 @@
     #define ERR_EINTR           EINTR
     #define SETSOCKOPT_PTR(ptr) (ptr)
     typedef int PlatformSocket;
+    #define INVALID_PLATFORM_SOCKET (-1)
 
     inline bool init_winsock() { return true; }
     inline void cleanup_winsock() {}
