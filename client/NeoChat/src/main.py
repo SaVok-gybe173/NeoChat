@@ -1,4 +1,4 @@
-from config import NAME, CONFIG, _setSceneLink
+from config import NAME, CONFIG, _setSceneLink, getPage, _setPage
 from ui.server import ServerMenu
 from ui.entrance import EntranceServer
 from ui.registration import RegistrationMenu
@@ -11,10 +11,11 @@ import os
 
 class Main:
     scens: list[ServerMenu, EntranceServer, RegistrationMenu, RecoveryMenu, CodeMenu] = []  # сценны
-    index = 1
+    index = 0
 
     def __init__(self, page: ft.Page):
         self.page = page
+        _setPage(page)
         page.title = NAME
         page.window.width = CONFIG.getint("WINDOW", "width")
         page.window.height = CONFIG.getint("WINDOW", "height")
@@ -30,16 +31,16 @@ class Main:
 
         self.scens[self.index](page)
 
-        _setSceneLink(self.setScene())
-        
+        _setSceneLink(self.setScene)
+
     @classmethod
     def setScene(cls, index):          # смена сценны
         if isinstance(index, str):
             index = [type(i).__name__ for i in cls.scens].index(index)
         cls.index = index              # 
-        cls.page.clean()               # 
+        getPage().clean()               # 
         
-        cls.scens[index](cls.page)    # запуск
+        cls.scens[index](getPage().page)    # запуск
 
 if __name__ == "__main__":
    ft.app(target=Main)

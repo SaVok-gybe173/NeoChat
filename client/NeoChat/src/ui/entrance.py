@@ -16,7 +16,7 @@ class EntranceServer:
     def __call__(self, page: ft.Page):
         login_field = ft.TextField(
                 label=getLan("RegistrationMenu", "login"),
-                hint_text=getLan("EntranceServer", "login-or-email"),
+                hint_text=getLan("EntranceServer", "login-email"),
                 border_color=PANEL_BORDER,
                 focused_border_color=ACCENT,
                 color=TEXT,
@@ -26,7 +26,7 @@ class EntranceServer:
             )
 
         password_field = ft.TextField(
-                label=getLan("EntranceServer", "login-email"),
+                label=getLan("RegistrationMenu", "password"),
                 hint_text="••••••••",
                 password=True,
                 can_reveal_password=True,
