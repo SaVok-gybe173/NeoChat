@@ -60,7 +60,7 @@ bool Server::start() {
 void Server::stop() {
     if (!running_.exchange(false)) return;
 
-    if (listenSocket_ >= 0) {
+    if (listenSocket_ != INVALID_PLATFORM_SOCKET) {
         CLOSE_SOCKET(listenSocket_);
         listenSocket_ = -1;
     }
