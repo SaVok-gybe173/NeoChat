@@ -39,7 +39,7 @@ Json Handlers::handleRegister(const Json& req) {
         res["message"] = "Empty username or password";
         return res;
     }
-    std::string salt = generateToken().substr(0, 16);
+    std::string salt = generateToken(); // 128-bit
     User user;
     user.username = username;
     user.passwordHash = hashPassword(password, salt);
@@ -73,7 +73,7 @@ Json Handlers::handleLogin(const Json& req, std::shared_ptr<Session> session) {
         std::string token = generateToken();
         {
             std::lock_guard<std::mutex> lock(sessionMutex_);
-            sessions_[token] = username;
+            authTokens_[token] = username;
         }
         if(session) {
             session->setUsername(username);
@@ -101,8 +101,8 @@ Json Handlers::handleSendMessage(const Json& req) {
     std::string from;
     {
         std::lock_guard<std::mutex> lock(sessionMutex_);
-        auto it = sessions_.find(token);
-        if(it == sessions_.end()) {
+        auto it = authTokens_.find(token);
+        if(it == authTokens_.end()) {
             res["status"] = "error";
             res["message"] = "Invalid token";
             return res;
@@ -163,8 +163,8 @@ Json Handlers::handleGetMessages(const Json& req) {
     std::string username;
     {
         std::lock_guard<std::mutex> lock(sessionMutex_);
-        auto it = sessions_.find(token);
-        if(it == sessions_.end()) {
+        auto it = authTokens_.find(token);
+        if(it == authTokens_.end()) {
             res["status"] = "error";
             res["message"] = "Invalid token";
             return res;
@@ -203,7 +203,7 @@ Json Handlers::handleGetUsers(const Json& req) {
     std::string token = req["token"].getString();
     {
         std::lock_guard<std::mutex> lock(sessionMutex_);
-        if(sessions_.find(token) == sessions_.end()) {
+        if(authTokens_.find(token) == authTokens_.end()) {
             res["status"] = "error";
             res["message"] = "Invalid token";
             return res;
@@ -227,10 +227,10 @@ Json Handlers::handleLogout(const Json& req, std::shared_ptr<Session> session) {
     std::string username;
     {
         std::lock_guard<std::mutex> lock(sessionMutex_);
-        auto it = sessions_.find(token);
-        if(it != sessions_.end()) {
+        auto it = authTokens_.find(token);
+        if(it != authTokens_.end()) {
             username = it->second;
-            sessions_.erase(it);
+            authTokens_.erase(it);
         }
     }
     if(!username.empty()) {
@@ -252,8 +252,8 @@ Json Handlers::handleUploadKey(const Json& req) {
     std::string username;
     {
         std::lock_guard<std::mutex> lock(sessionMutex_);
-        auto it = sessions_.find(token);
-        if(it == sessions_.end()) {
+        auto it = authTokens_.find(token);
+        if(it == authTokens_.end()) {
             res["status"] = "error";
             res["message"] = "Invalid token";
             return res;
@@ -280,7 +280,7 @@ Json Handlers::handleGetKey(const Json& req) {
     std::string token = req["token"].getString();
     {
         std::lock_guard<std::mutex> lock(sessionMutex_);
-        if(sessions_.find(token) == sessions_.end()) {
+        if(authTokens_.find(token) == authTokens_.end()) {
             res["status"] = "error";
             res["message"] = "Invalid token";
             return res;
