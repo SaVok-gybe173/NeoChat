@@ -5,8 +5,7 @@
 #include <iostream>
 #include <cstring>
 
-Server::Server(const std::string& host, int port, Router* router)
-    : host_(host), port_(port), listenSocket_(-1), router_(router), running_(false) {}
+Server::Server(const std::string& host, int port, Router* router) : host_(host), port_(port), listenSocket_(INVALID_PLATFORM_SOCKET), router_(router), running_(false) {}
 
 Server::~Server() {
     stop();
@@ -19,11 +18,7 @@ bool Server::start() {
     }
 
     listenSocket_ = socket(AF_INET, SOCK_STREAM, 0);
-#ifdef _WIN32
-    if (listenSocket_ == INVALID_SOCKET) {
-#else
-    if (listenSocket_ < 0) {
-#endif
+    if (listenSocket_ == INVALID_PLATFORM_SOCKET) {
         std::cerr << "socket failed (code: " << ERRNO << ")\n";
         return false;
     }
