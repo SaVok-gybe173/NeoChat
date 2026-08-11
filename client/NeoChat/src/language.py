@@ -44,7 +44,7 @@ LAN: Dict[str, Dict[str, Dict[str, str] | str]] = {
             "register": "Зарегистрироваться",
             "create-account": "Создайте аккаунт",
             "please-fill-registration-data": "Заполните данные для регистрации",
-            "there-already-account": "Уже есть аккаунт?"
+            "there-already-account": "Уже есть аккаунт?",
 
         },
         "RecoveryMenu": {
@@ -56,7 +56,7 @@ LAN: Dict[str, Dict[str, Dict[str, str] | str]] = {
 
         },
         "EntranceServer": {
-            "login-email": "Логин или email",
+            "login-email": "email",
             "fill-login-password": "Заполните логин и пароль",
             "forgot-password": "Забыли пароль?",
             "account-login": "Вход в аккаунт",

@@ -47,7 +47,7 @@ class RecoveryMenu:
 
     
         def on_back_to_login(e): # Переход на экран входа
-            self.setScene(1)
+            self.setScene("EntranceServer")
     
         # Кнопка отправки
         send_button = ft.Button(

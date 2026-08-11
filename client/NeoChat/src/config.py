@@ -2,6 +2,22 @@ import configparser
 import flet as ft
 import os
 
+def setScene(index: int|str) -> None:
+    global _setScene
+    return _setScene(index)
+
+def _setSceneLink(setScene):
+    global _setScene
+    _setScene = setScene
+
+def _setPage(page: ft.Page):
+    global _page
+    _page = page
+
+def getPage() -> ft.Page:
+    global _page
+    return _page
+
 CONFIG = configparser.ConfigParser()
 CONFIG.read("config.ini")
 

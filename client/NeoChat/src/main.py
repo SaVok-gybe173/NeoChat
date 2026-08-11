@@ -1,4 +1,4 @@
-from config import NAME, CONFIG
+from config import NAME, CONFIG, _setSceneLink
 from ui.server import ServerMenu
 from ui.entrance import EntranceServer
 from ui.registration import RegistrationMenu
@@ -10,7 +10,8 @@ import sys
 import os
 
 class Main:
-    scens = []  # сценны
+    scens: list[ServerMenu, EntranceServer, RegistrationMenu, RecoveryMenu, CodeMenu] = []  # сценны
+    index = 1
 
     def __init__(self, page: ft.Page):
         self.page = page
@@ -19,21 +20,26 @@ class Main:
         page.window.height = CONFIG.getint("WINDOW", "height")
         page.theme_mode = "dark"
         page.window.icon = "neochat-logo.png"
-        self.index = 0
 
         # загрузка
-        self.scens.append(ServerMenu(self.setScene))
-        self.scens.append(EntranceServer(self.setScene))
-        self.scens.append(RegistrationMenu(self.setScene))
-        self.scens.append(RecoveryMenu(self.setScene))
-        self.scens.append(CodeMenu(self.setScene))
+        self.scens.append(ServerMenu(self.setScene))            # меню для выбора сервера
+        self.scens.append(EntranceServer(self.setScene))        # вход на сервер
+        self.scens.append(RegistrationMenu(self.setScene))      # регестрация
+        self.scens.append(RecoveryMenu(self.setScene))          # востановление пароля
+        self.scens.append(CodeMenu(self.setScene))              # прием цифр из письма
 
         self.scens[self.index](page)
 
-    def setScene(self, index):          # смена сценны
-        self.index = index              # 
-        self.page.clean()               # 
-        self.scens[index](self.page)    # запуск
+        _setSceneLink(self.setScene())
+        
+    @classmethod
+    def setScene(cls, index):          # смена сценны
+        if isinstance(index, str):
+            index = [type(i).__name__ for i in cls.scens].index(index)
+        cls.index = index              # 
+        cls.page.clean()               # 
+        
+        cls.scens[index](cls.page)    # запуск
 
 if __name__ == "__main__":
    ft.app(target=Main)

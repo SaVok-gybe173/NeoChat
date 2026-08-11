@@ -20,7 +20,7 @@ class RegistrationMenu:
         self.page = page
 
         def on_login_click(e): # Переход на экран входа
-            self.setScene(1)
+            self.setScene("EntranceServer")
             
         def on_register_click(e): # запершение регестрации
             if not all([login_field.value, email_field.value, password_field.value, confirm_field.value]): # Проверка заполненности

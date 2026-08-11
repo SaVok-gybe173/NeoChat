@@ -16,7 +16,7 @@ class EntranceServer:
     def __call__(self, page: ft.Page):
         login_field = ft.TextField(
                 label=getLan("RegistrationMenu", "login"),
-                hint_text="Логин или email",
+                hint_text=getLan("EntranceServer", "login-or-email"),
                 border_color=PANEL_BORDER,
                 focused_border_color=ACCENT,
                 color=TEXT,
@@ -50,10 +50,10 @@ class EntranceServer:
             
     
         def on_forgot_click(e): # сброс пароля
-            self.setScene(3)
+            self.setScene("RecoveryMenu")
     
         def on_register_click(e): # регестрация
-            self.setScene(2)
+            self.setScene("RegistrationMenu")
 
         login_button = ft.Button(
                 content=ft.Text(
@@ -101,8 +101,8 @@ class EntranceServer:
                         ft.Column(
                             spacing=4,
                             controls=[
-                                ft.Text(getLan("RegistrationMenu", "account-login"), size=22, weight=ft.FontWeight.W_600, color=TEXT),
-                                ft.Text(getLan("RegistrationMenu", "enter-login-password-continue"), size=14, color=MUTED),
+                                ft.Text(getLan("EntranceServer", "account-login"), size=22, weight=ft.FontWeight.W_600, color=TEXT),
+                                ft.Text(getLan("EntranceServer", "enter-login-password-continue"), size=14, color=MUTED),
                             ],
                         ),
                         login_field,
@@ -114,7 +114,7 @@ class EntranceServer:
                         ft.Row(
                             alignment=ft.MainAxisAlignment.CENTER,
                             controls=[
-                                ft.Text(getLan("RegistrationMenu", "no-account"), size=13.5, color=MUTED),
+                                ft.Text(getLan("EntranceServer", "no-account"), size=13.5, color=MUTED),
                                 register_button,
                             ],
                         ),
