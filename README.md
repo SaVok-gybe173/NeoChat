@@ -41,8 +41,8 @@ client/
 |   |   |   └── encrypted.py
 |   |   ├── network/
 |   |   |   ├── api.py
-|   |   |   └── socet.py
-|   |   ├── storege/
+|   |   |   └── socket.py
+|   |   ├── storage/
 |   |   |   ├── message/
 |   |   |   |   ├── bd.py
 |   |   |   |   └── structure.py
