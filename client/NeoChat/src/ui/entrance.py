@@ -1,4 +1,5 @@
 from typing import Callable
+from language import LAN, getLan
 import flet as ft
 
 ACCENT = "#5b8cff"
@@ -14,7 +15,7 @@ class EntranceServer:
 
     def __call__(self, page: ft.Page):
         login_field = ft.TextField(
-                label="Логин",
+                label=getLan("RegistrationMenu", "login"),
                 hint_text="Логин или email",
                 border_color=PANEL_BORDER,
                 focused_border_color=ACCENT,
@@ -25,7 +26,7 @@ class EntranceServer:
             )
 
         password_field = ft.TextField(
-                label="Пароль",
+                label=getLan("EntranceServer", "login-email"),
                 hint_text="••••••••",
                 password=True,
                 can_reveal_password=True,
@@ -41,7 +42,7 @@ class EntranceServer:
 
         def on_login_click(e): # вход
             if not login_field.value or not password_field.value:
-                error_text.value = "Заполните логин и пароль"
+                error_text.value = getLan("EntranceServer", "fill-login-password")
                 error_text.visible = True
                 page.update()
                 return
@@ -56,7 +57,7 @@ class EntranceServer:
 
         login_button = ft.Button(
                 content=ft.Text(
-                    "Войти",
+                    getLan("log-in"),
                     color="#ffffff",
                     weight=ft.FontWeight.W_600,
                     size=14.5,
@@ -71,13 +72,13 @@ class EntranceServer:
             )
 
         forgot_button = ft.TextButton(
-                content=ft.Text("Забыли пароль?"),
+                content=ft.Text(getLan("EntranceServer", "forgot-password")),
                 style=ft.ButtonStyle(color=ACCENT),
                 on_click=on_forgot_click,
             )
         
         register_button = ft.TextButton(
-                content=ft.Text("Зарегистрироваться"),
+                content=ft.Text(getLan("RegistrationMenu", "register")),
                 style=ft.ButtonStyle(color=ACCENT),
                 on_click=on_register_click,
             )
@@ -100,8 +101,8 @@ class EntranceServer:
                         ft.Column(
                             spacing=4,
                             controls=[
-                                ft.Text("Вход в аккаунт", size=22, weight=ft.FontWeight.W_600, color=TEXT),
-                                ft.Text("Введите логин и пароль, чтобы продолжить", size=14, color=MUTED),
+                                ft.Text(getLan("RegistrationMenu", "account-login"), size=22, weight=ft.FontWeight.W_600, color=TEXT),
+                                ft.Text(getLan("RegistrationMenu", "enter-login-password-continue"), size=14, color=MUTED),
                             ],
                         ),
                         login_field,
@@ -113,7 +114,7 @@ class EntranceServer:
                         ft.Row(
                             alignment=ft.MainAxisAlignment.CENTER,
                             controls=[
-                                ft.Text("Нет аккаунта?", size=13.5, color=MUTED),
+                                ft.Text(getLan("RegistrationMenu", "no-account"), size=13.5, color=MUTED),
                                 register_button,
                             ],
                         ),

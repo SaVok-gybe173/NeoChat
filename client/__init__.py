@@ -1,1 +1,0 @@
-# NeoChat client package

@@ -1,4 +1,5 @@
 from typing import Callable
+from language import LAN, getLan
 import flet as ft
 
 ACCENT = "#5b8cff"
@@ -16,8 +17,8 @@ class RecoveryMenu:
     def __call__(self, page: ft.Page):
 
         email_field = ft.TextField(
-            label="Email",
-            hint_text="example@mail.com",
+            label=getLan("RegistrationMenu", "email"),
+            hint_text=getLan("RegistrationMenu", "example-mail"),
             border_color=PANEL_BORDER,
             focused_border_color=ACCENT,
             color=TEXT,
@@ -30,14 +31,14 @@ class RecoveryMenu:
     
         def on_send_click(e): # переход обратно на экран входа
             if not email_field.value:
-                error_text.value = "Введите email"
+                error_text.value = getLan("RecoveryMenu", "enter-email")
                 error_text.visible = True
                 page.update()
                 return
     
             # Простейшая проверка наличия @
             if "@" not in email_field.value:
-                error_text.value = "Введите корректный email"
+                error_text.value = getLan("RecoveryMenu", "enter-valid-email")
                 error_text.visible = True
                 page.update()
                 return
@@ -51,7 +52,7 @@ class RecoveryMenu:
         # Кнопка отправки
         send_button = ft.Button(
             content=ft.Text(
-                "Отправить",
+                getLan("send"),
                 color="#ffffff",
                 weight=ft.FontWeight.W_600,
                 size=14.5,
@@ -67,7 +68,7 @@ class RecoveryMenu:
     
         # Ссылка "Вернуться ко входу"
         back_link = ft.TextButton(
-            content=ft.Text("Вернуться ко входу"),
+            content=ft.Text(getLan("RecoveryMenu", "return-entrance")),
             style=ft.ButtonStyle(color=ACCENT),
             on_click=on_back_to_login,
         )
@@ -92,8 +93,8 @@ class RecoveryMenu:
                     ft.Column(
                         spacing=4,
                         controls=[
-                            ft.Text("Восстановление пароля", size=22, weight=ft.FontWeight.W_600, color=TEXT),
-                            ft.Text("Введите email, и мы пришлём код для сброса", size=14, color=MUTED),
+                            ft.Text(getLan("RecoveryMenu", "password-recovery"), size=22, weight=ft.FontWeight.W_600, color=TEXT),
+                            ft.Text(getLan("RecoveryMenu", "enter-email-send-code-reset"), size=14, color=MUTED),
                         ],
                     ),
                     email_field,

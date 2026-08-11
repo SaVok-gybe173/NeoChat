@@ -8,6 +8,9 @@ LAN: Dict[str, Dict[str, Dict[str, str] | str]] = {
         "Cancellation": "Отмена",
         "Add": "Добавить",
         "join": "join",
+        "log-in": "Войти",
+        "send": "Отправить",
+        "confirm": "Подтвердить",
 
         "server":{
             "all-regions": "Все регионы",
@@ -28,7 +31,49 @@ LAN: Dict[str, Dict[str, Dict[str, str] | str]] = {
             "add-ip": "Добавить по IP",
             "fast-connection": "Быстрое подключение",
             
-        }
+        },
+        "RegistrationMenu":{
+            "fill-fields": "Заполните все поля",
+            "passwords-match": "Пароли не совпадают",
+            "login": "Логин",
+            "come-login": "Придумайте логин",
+            "email": "Email",
+            "example-mail": "example@mail.com",
+            "password": "Пароль",
+            "confirm-password": "Подтвердите пароль",
+            "register": "Зарегистрироваться",
+            "create-account": "Создайте аккаунт",
+            "please-fill-registration-data": "Заполните данные для регистрации",
+            "there-already-account": "Уже есть аккаунт?"
+
+        },
+        "RecoveryMenu": {
+            "enter-email": "Введите email",
+            "enter-valid-email": "Введите корректный email",
+            "return-entrance": "Вернуться ко входу",
+            "password-recovery": "Восстановление пароля",
+            "enter-email-send-code-reset": "Введите email, и мы пришлём код для сброса"
+
+        },
+        "EntranceServer": {
+            "login-email": "Логин или email",
+            "fill-login-password": "Заполните логин и пароль",
+            "forgot-password": "Забыли пароль?",
+            "account-login": "Вход в аккаунт",
+            "enter-login-password-continue": "Введите логин и пароль, чтобы продолжить",
+            "no-account": "Нет аккаунта?",
+
+        },
+        "CodMenu": {
+            "code-from-letter": "Код из письма",
+            "enter-6-digits": "Введите 6 цифр",
+            "enter-code": "Введите код",
+            "code-must-contain-exactly-6-digits": "Код должен содержать ровно 6 цифр",
+            "send-code-again": "Отправить код повторно",
+            "confirmation": "Подтверждение",
+            "enter-6-digit-code-sent-emai": "Введите 6-значный код, отправленный на вашу почту"
+
+            }
     }
 }
 

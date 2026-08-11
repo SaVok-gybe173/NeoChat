@@ -3,7 +3,7 @@ from ui.server import ServerMenu
 from ui.entrance import EntranceServer
 from ui.registration import RegistrationMenu
 from ui.recovery import RecoveryMenu
-from ui.email_cod import CodMenu
+from ui.email_cod import CodeMenu
 
 import flet as ft
 import sys
@@ -26,7 +26,7 @@ class Main:
         self.scens.append(EntranceServer(self.setScene))
         self.scens.append(RegistrationMenu(self.setScene))
         self.scens.append(RecoveryMenu(self.setScene))
-        self.scens.append(CodMenu(self.setScene))
+        self.scens.append(CodeMenu(self.setScene))
 
         self.scens[self.index](page)
 

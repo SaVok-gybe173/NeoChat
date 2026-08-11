@@ -1,4 +1,5 @@
 from typing import Callable
+from language import getLan
 import flet as ft
 
 ACCENT = "#5b8cff"
@@ -9,7 +10,7 @@ TEXT = "#eef1f6"
 DANGER = "#ff6b6b"
 SUCCESS = "#4caf50"
 
-class CodMenu:
+class CodeMenu:
     def __init__(self, setScene: Callable):
         self.setScene = setScene
 
@@ -17,8 +18,8 @@ class CodMenu:
 
         # поле для ввода кода
         code_field = ft.TextField(
-            label="Код из письма",
-            hint_text="Введите 6 цифр",
+            label=getLan("CodMenu", "code-from-letter"),
+            hint_text=getLan("CodMenu", "enter-6-digits"),
             max_length=6,
             keyboard_type=ft.KeyboardType.NUMBER,
             border_color=PANEL_BORDER,
@@ -39,13 +40,13 @@ class CodMenu:
         def on_verify_click(e): # переход на экран смены пароля
             code = code_field.value 
             if not code:
-                error_text.value = "Введите код"
+                error_text.value = getLan("CodMenu", "enter-code")
                 error_text.visible = True
                 page.update()
                 return
     
             if len(code) != 6 or not code.isdigit():
-                error_text.value = "Код должен содержать ровно 6 цифр"
+                error_text.value = getLan("CodMenu", "code-must-contain-exactly-6-digits")
                 error_text.visible = True
                 page.update()
                 return
@@ -62,7 +63,7 @@ class CodMenu:
         # кнопка подтверждения
         verify_button = ft.Button(
             content=ft.Text(
-                "Подтвердить",
+                getLan("confirm"),
                 color="#ffffff",
                 weight=ft.FontWeight.W_600,
                 size=14.5,
@@ -78,13 +79,13 @@ class CodMenu:
     
         # ссылки
         resend_link = ft.TextButton(
-            content=ft.Text("Отправить код повторно"),
+            content=ft.Text(getLan("CodMenu", "send-code-again")),
             style=ft.ButtonStyle(color=ACCENT),
             on_click=on_resend_click,
         )
     
         back_link = ft.TextButton(
-            content=ft.Text("Вернуться ко входу"),
+            content=ft.Text(getLan("RecoveryMenu", "return-entrance")),
             style=ft.ButtonStyle(color=MUTED),
             on_click=on_back_to_login,
         )
@@ -109,8 +110,8 @@ class CodMenu:
                     ft.Column(
                         spacing=4,
                         controls=[
-                            ft.Text("Подтверждение", size=22, weight=ft.FontWeight.W_600, color=TEXT),
-                            ft.Text("Введите 6-значный код, отправленный на вашу почту", size=14, color=MUTED),
+                            ft.Text(getLan("CodMenu", "confirmation"), size=22, weight=ft.FontWeight.W_600, color=TEXT),
+                            ft.Text(getLan("CodMenu", "enter-6-digit-code-sent-emai"), size=14, color=MUTED),
                         ],
                     ),
 

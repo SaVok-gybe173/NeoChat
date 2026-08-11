@@ -24,13 +24,13 @@ class RegistrationMenu:
             
         def on_register_click(e): # запершение регестрации
             if not all([login_field.value, email_field.value, password_field.value, confirm_field.value]): # Проверка заполненности
-                error_text.value = "Заполните все поля"
+                error_text.value = getLan("RegistrationMenu", "fill-fields")
                 error_text.visible = True
                 page.update()
                 return
     
             if password_field.value != confirm_field.value: # Проверка совпадения паролей
-                error_text.value = "Пароли не совпадают"
+                error_text.value = getLan("RegistrationMenu", "passwords-match")
                 error_text.visible = True
                 page.update()
                 return
@@ -39,8 +39,8 @@ class RegistrationMenu:
 
         # Поля ввода
         login_field = ft.TextField(
-            label="Логин",
-            hint_text="Придумайте логин",
+            label=getLan("RegistrationMenu", "login"),
+            hint_text=getLan("RegistrationMenu", "come-login"),
             border_color=PANEL_BORDER,
             focused_border_color=ACCENT,
             color=TEXT,
@@ -50,8 +50,8 @@ class RegistrationMenu:
         )
     
         email_field = ft.TextField(
-            label="Email",
-            hint_text="example@mail.com",
+            label=getLan("RegistrationMenu", "email"),
+            hint_text=getLan("RegistrationMenu", "example-mail"),
             border_color=PANEL_BORDER,
             focused_border_color=ACCENT,
             color=TEXT,
@@ -61,7 +61,7 @@ class RegistrationMenu:
         )
     
         password_field = ft.TextField(
-            label="Пароль",
+            label=getLan("RegistrationMenu", "password"),
             hint_text="••••••••",
             password=True,
             can_reveal_password=True,
@@ -74,7 +74,7 @@ class RegistrationMenu:
         )
     
         confirm_field = ft.TextField(
-            label="Подтвердите пароль",
+            label=getLan("RegistrationMenu", "confirm-password"),
             hint_text="••••••••",
             password=True,
             can_reveal_password=True,
@@ -91,7 +91,7 @@ class RegistrationMenu:
         # Кнопка регистрации
         register_button = ft.Button(
             content=ft.Text(
-                "Зарегистрироваться",
+                getLan("RegistrationMenu", "register"),
                 color="#ffffff",
                 weight=ft.FontWeight.W_600,
                 size=14.5,
@@ -107,7 +107,7 @@ class RegistrationMenu:
     
         # Ссылка "Войти"
         login_link = ft.TextButton(
-            content=ft.Text("Войти"),
+            content=ft.Text(getLan("log-in")),
             style=ft.ButtonStyle(color=ACCENT),
             on_click=on_login_click,
         )
@@ -132,8 +132,8 @@ class RegistrationMenu:
                     ft.Column(
                         spacing=4,
                         controls=[
-                            ft.Text("Создайте аккаунт", size=22, weight=ft.FontWeight.W_600, color=TEXT),
-                            ft.Text("Заполните данные для регистрации", size=14, color=MUTED),
+                            ft.Text(getLan("RegistrationMenu", "create-account"), size=22, weight=ft.FontWeight.W_600, color=TEXT),
+                            ft.Text(getLan("RegistrationMenu", "please-fill-registration-data"), size=14, color=MUTED),
                         ],
                     ),
                     login_field,
@@ -146,7 +146,7 @@ class RegistrationMenu:
                     ft.Row(
                         alignment=ft.MainAxisAlignment.CENTER,
                         controls=[
-                            ft.Text("Уже есть аккаунт?", size=13.5, color=MUTED),
+                            ft.Text(getLan("RegistrationMenu", "there-already-account"), size=13.5, color=MUTED),
                             login_link,
                         ],
                     ),
