@@ -4,6 +4,7 @@ from ui.entrance import EntranceServer
 from ui.registration import RegistrationMenu
 from ui.recovery import RecoveryMenu
 from ui.email_cod import CodeMenu
+from ui.chat_app import ChatMenu
 
 import flet as ft
 import sys
@@ -11,7 +12,7 @@ import os
 
 class Main:
     scens: list[ServerMenu, EntranceServer, RegistrationMenu, RecoveryMenu, CodeMenu] = []  # сценны
-    index = 0
+    index = 5
 
     def __init__(self, page: ft.Page):
         self.page = page
@@ -28,6 +29,7 @@ class Main:
         self.scens.append(RegistrationMenu(self.setScene))      # регестрация
         self.scens.append(RecoveryMenu(self.setScene))          # востановление пароля
         self.scens.append(CodeMenu(self.setScene))              # прием цифр из письма
+        self.scens.append(ChatMenu(self.setScene))              
 
         self.scens[self.index](page)
 
