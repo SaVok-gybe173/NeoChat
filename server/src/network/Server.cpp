@@ -5,108 +5,121 @@
 #include <iostream>
 #include <cstring>
 
-Server::Server(const std::string& host, int port, Router* router) : host_(host), port_(port), listenSocket_(-1), router_(router), running_(false) {}
+Server::Server(const std::string& host, int port, Router* router)
+    : host_(host), port_(port), listenSocket_(-1), router_(router), running_(false) {}
+
 Server::~Server() {
     stop();
 }
+
 bool Server::start() {
-    if(!init_winsock) {
+    if (!init_winsock()) {
         std::cerr << "WSAStartup failed\n";
         return false;
     }
+
     listenSocket_ = socket(AF_INET, SOCK_STREAM, 0);
-    if(listenSocket_ < 0) {
+#ifdef _WIN32
+    if (listenSocket_ == INVALID_SOCKET) {
+#else
+    if (listenSocket_ < 0) {
+#endif
         std::cerr << "socket failed (code: " << ERRNO << ")\n";
         return false;
     }
+
     int opt = 1;
-    if(setsockopt(listenSocket_, SOL_SOCKET, SO_REUSEADDR, SETSOCKOPT_PTR(&opt), sizeof(opt)) < 0) {
+    if (setsockopt(listenSocket_, SOL_SOCKET, SO_REUSEADDR,
+                   SETSOCKOPT_PTR(&opt), sizeof(opt)) < 0) {
         std::cerr << "setsockopt failed (code: " << ERRNO << ")\n";
         CLOSE_SOCKET(listenSocket_);
         return false;
     }
+
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port_);
-    if(inet_pton(AF_INET, host_.c_str(), &addr.sin_addr) <= 0) {
+    if (inet_pton(AF_INET, host_.c_str(), &addr.sin_addr) <= 0) {
         std::cerr << "Invalid host: " << host_ << "\n";
         CLOSE_SOCKET(listenSocket_);
         return false;
     }
-    if(bind(listenSocket_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
+
+    if (bind(listenSocket_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
         std::cerr << "bind failed (code: " << ERRNO << ")\n";
         CLOSE_SOCKET(listenSocket_);
         return false;
     }
-    if(listen(listenSocket_, 128) < 0) {
+
+    if (listen(listenSocket_, 128) < 0) {
         std::cerr << "listen failed (code: " << ERRNO << ")\n";
         CLOSE_SOCKET(listenSocket_);
         return false;
     }
+
     running_ = true;
     std::cout << "Server listening on " << host_ << ":" << port_ << "\n";
     return true;
 }
+
 void Server::stop() {
-    if(!running_.exchange(false)) return;
-    if(listenSocket_ >= 0) {
+    if (!running_.exchange(false)) return;
+
+    if (listenSocket_ >= 0) {
         CLOSE_SOCKET(listenSocket_);
         listenSocket_ = -1;
     }
-    std::unordered_map<int, std::shared_ptr<Session>> copy;
+
+    std::unordered_map<PlatformSocket, std::shared_ptr<Session>> copy;
     {
         std::lock_guard<std::mutex> lock(sessionsMutex_);
         copy = std::move(sessions_);
     }
-    for(auto& [fd, session] : copy) {
+
+    for (auto& [fd, session] : copy) {
         session->stop();
     }
-    {
-        std::lock_guard<std::mutex> lock(reaperMutex_);
-        for(auto& t : reaperThreads_) {
-            if(t.joinable()) t.join();
-        }
-        reaperThreads_.clear();
-    }
+
     cleanup_winsock();
 }
+
 void Server::run() {
-    while(running_) {
+    while (running_) {
         sockaddr_in clientAddr{};
         socklen_t addrLen = sizeof(clientAddr);
         int clientSocket = accept(listenSocket_, reinterpret_cast<sockaddr*>(&clientAddr), &addrLen);
-        if(clientSocket < 0) {
-            if(ERRNO == ERR_EINTR) continue;
-            if(running_) std::cerr << "accept failed (code: " << ERRNO << ")\n";
+        if (listenSocket_ == INVALID_PLATFORM_SOCKET) {
+            if (ERRNO == ERR_EINTR) continue;
+            if (running_) std::cerr << "accept failed (code: " << ERRNO << ")\n";
             break;
         }
-        auto session = std::make_shared<Session>(clientSocket, router_, [this](std::shared_ptr<Session> s) { this->removeSession(s); });
+
+        auto session = std::make_shared<Session>(
+            clientSocket,
+            router_,
+            [this](std::shared_ptr<Session> s) { this->removeSession(s); }
+        );
+
         {
             std::lock_guard<std::mutex> lock(sessionsMutex_);
             sessions_[clientSocket] = session;
         }
+
         session->start();
     }
 }
+
+
 void Server::removeSession(std::shared_ptr<Session> session) {
     {
         std::lock_guard<std::mutex> lock(sessionsMutex_);
-        for(auto it = sessions_.begin(); it != sessions_.end(); ) {
-            if(it->second == session) {
-                it = sessions_.erase(it);
-            } else {
-                it++;
-            }
-        }
+        sessions_.erase(session->getSocket());
     }
-    if(session && router_) {
+
+    if (session && router_) {
         std::string username = session->getUsername();
-        if(!username.empty()) {
+        if (!username.empty()) {
             router_->onUserDisconnected(username);
         }
-    }
-    if(session) {
-        std::lock_guard<std::mutex> lock(reaperMutex_);
-        reaperThreads_.emplace_back([session]() mutable { session.reset(); });
     }
 }
