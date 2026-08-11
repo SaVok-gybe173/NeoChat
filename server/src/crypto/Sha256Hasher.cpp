@@ -21,21 +21,28 @@ static const uint32_t k[64] = {
     0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
     0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
 };
+
 std::string Sha256Hasher::hash(const std::string& input) {
+    uint32_t h[8];
     h[0] = 0x6a09e667; h[1] = 0xbb67ae85; h[2] = 0x3c6ef372; h[3] = 0xa54ff53a;
     h[4] = 0x510e527f; h[5] = 0x9b05688c; h[6] = 0x1f83d9ab; h[7] = 0x5be0cd19;
-    bitLen = 0;
+    uint64_t bitLen = 0;
+
     std::vector<uint8_t> data(input.begin(), input.end());
     bitLen += data.size() * 8;
+
     data.push_back(0x80);
-    while((data.size() % 64) != 56) data.push_back(0x00);
+    while ((data.size() % 64) != 56) data.push_back(0x00);
+
     uint64_t bitLenBE = bitLen;
-    for(int i = 7; i >= 0; i--) data.push_back((bitLenBE >> (i * 8)) & 0xFF);
-    for(size_t i = 0; i < data.size(); i += 64) {
-        transform(&data[i]);
+    for (int i = 7; i >= 0; --i) data.push_back((bitLenBE >> (i * 8)) & 0xFF);
+
+    for (size_t i = 0; i < data.size(); i += 64) {
+        transform(h, &data[i]);
     }
+
     std::vector<uint8_t> hash(32);
-    for(int i = 0; i < 8; i++) {
+    for (int i = 0; i < 8; ++i) {
         hash[i*4] = (h[i] >> 24) & 0xFF;
         hash[i*4+1] = (h[i] >> 16) & 0xFF;
         hash[i*4+2] = (h[i] >> 8) & 0xFF;
@@ -43,16 +50,20 @@ std::string Sha256Hasher::hash(const std::string& input) {
     }
     return toHex(hash);
 }
-void Sha256Hasher::transform(const uint8_t* data) {
+
+void Sha256Hasher::transform(uint32_t h[8], const uint8_t* data) {
     uint32_t m[64];
     uint32_t w[8];
+
     for (int i = 0; i < 16; ++i) {
         m[i] = (data[i*4] << 24) | (data[i*4+1] << 16) | (data[i*4+2] << 8) | (data[i*4+3]);
     }
     for (int i = 16; i < 64; ++i) {
         m[i] = SIG1(m[i-2]) + m[i-7] + SIG0(m[i-15]) + m[i-16];
     }
+
     for (int i = 0; i < 8; ++i) w[i] = h[i];
+
     for (int i = 0; i < 64; ++i) {
         uint32_t t1 = w[7] + EP1(w[4]) + CH(w[4], w[5], w[6]) + k[i] + m[i];
         uint32_t t2 = EP0(w[0]) + MAJ(w[0], w[1], w[2]);
