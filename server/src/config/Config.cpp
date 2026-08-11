@@ -40,5 +40,9 @@ std::string Config::getString(const std::string& section, const std::string& key
 int Config::getInt(const std::string& section, const std::string& key, int defaultVal) const {
     std::string s = getString(section, key);
     if(s.empty()) return defaultVal;
-    return std::stoi(s);
+    try {
+        return std::stoi(s);
+    } catch (...) {
+        return defaultVal;
+    }
 }
