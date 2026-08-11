@@ -6,11 +6,17 @@ server/
 |   |   ├── Session.hpp       (класс для создания сессии)
 |   |   └── platform.hpp      (реализация кроссплатформенности для Windows и Linux)
 │   ├── routing/              (маршрутизация)
+|   |   ├── Router.hpp
+|   |   ├── Handlers.hpp
+|   |   └── Handlers.cpp
 │   ├── database/             (своя БД)
 |   |   ├── IDatabase.hpp     (класс кастомной БД)
 |   |   ├── JsonDatabase.hpp  (класс БД для хранения в JSON-формате из файла Json.hpp)
 |   |   └── JsonDatabase.cpp  (реализация функция хранения и загрузки в БД)
-│   ├── crypto/               (интерфейс ICrypto, реализации для хешей)
+│   ├── crypto/               (интерфейс ICrypto, реализации для хешей, хеширование)
+|   |   ├── ICrypto.hpp
+|   |   ├── Sha256Hasher.hpp
+|   |   └── Sha256Hasher.cpp
 |   ├── utils/                (вспомогательные методы, функции, классы)
 |   |   └── Json.hpp          (полноценная реализация парсера для JSON-файлов и для полноценного хранения данных)
 │   └── config/
