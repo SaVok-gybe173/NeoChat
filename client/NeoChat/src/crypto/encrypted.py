@@ -1,113 +1,177 @@
-# взято с PyForge
-import hashlib
-import secrets
+"""
+End-to-End Encryption: X25519 ephemeral-static ECDH + HKDF-SHA256 + AES-256-GCM.
+Каждое сообщение — уникальный ephemeral ключ (Forward Secrecy).
+"""
+
 import base64
-from itertools import cycle
+import os
+from typing import Tuple
 
-# шифр по паролю
-def derive_key(password: str, salt: bytes, key_length: int = 32) -> bytes:
-    """Получить ключ из пароля через PBKDF2-HMAC-SHA256."""
-    return hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000, dklen=key_length)
-
-def encrypt(plaintext: str, password: str) -> str:
-    """Шифрование XOR с солью и возврат закодированной строки base64."""
-    salt = secrets.token_bytes(16) # Генерируем случайную соль (16 байт)
-    return base64.b64encode(salt + bytes([b ^ k for b, k in zip(plaintext.encode('utf-8'), cycle(derive_key(password, salt)))])).decode('ascii')
-
-def decrypt(encrypted_b64: str, password: str) -> str:
-    """Расшифрование XOR-зашифрованной строки."""
-    raw = base64.b64decode(encrypted_b64)
-    return bytes([b ^ k for b, k in zip(raw[16:], cycle(derive_key(password, raw[:16])))]).decode('utf-8')
+from cryptography.hazmat.primitives.asymmetric.x25519 import (
+    X25519PrivateKey, X25519PublicKey
+)
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 
-# Для демонстрации используем небольшое простое число и генератор.
-# В реальности нужно брать 2048-битные числа из RFC 3526.
-P = 9973      # простое число
-G = 2         # первообразный корень по модулю P
+class KeyManager:
+    """Управление статической ключевой парой X25519 клиента."""
 
-def generate_dh_private_key() -> int:
-    """Сгенерировать секретный ключ (число от 2 до P-2)."""
-    return secrets.randbelow(P - 3) + 2  # 2 .. P-2
+    def __init__(self):
+        self._private_key: X25519PrivateKey = X25519PrivateKey.generate()
+        self._public_key: X25519PublicKey = self._private_key.public_key()
 
-def compute_dh_public_key(private_key: int) -> int:
-    """Вычислить открытый ключ: G^private_key mod P."""
-    return pow(G, private_key, P)
+    @property
+    def public_key_b64(self) -> str:
+        """Base64-публичный ключ для upload_key на сервер."""
+        raw = self._public_key.public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw
+        )
+        return base64.b64encode(raw).decode("ascii")
 
-def compute_shared_secret(private_key: int, other_public_key: int) -> int:
-    """Вычислить общий секрет: other_public_key^private_key mod P."""
-    return pow(other_public_key, private_key, P)
+    @property
+    def private_key(self) -> X25519PrivateKey:
+        """Приватный ключ для расшифровки входящих сообщений."""
+        return self._private_key
 
-def derive_key_from_shared(shared_secret: int, salt: bytes = None) -> bytes:
+
+class PublicKeyCache:
+    """Кэш публичных ключей собеседников: username -> X25519PublicKey."""
+
+    def __init__(self):
+        self._cache: dict[str, X25519PublicKey] = {}
+
+    def add(self, username: str, b64_key: str | None) -> None:
+        """
+        Добавить ключ в кэш. b64_key должен быть валидным base64 X25519 ключом.
+        Перед вызовом убедитесь, что ответ сервера содержит status == "ok".
+        """
+        if not b64_key:
+            raise ValueError(f"Empty public key for {username}")
+        try:
+            raw = base64.b64decode(b64_key)
+            if len(raw) != 32:
+                raise ValueError(f"Invalid X25519 key length: {len(raw)}")
+            self._cache[username] = X25519PublicKey.from_public_bytes(raw)
+        except Exception as e:
+            raise ValueError(f"Invalid public key for {username}: {e}")
+
+    def get(self, username: str) -> X25519PublicKey:
+        if username not in self._cache:
+            raise KeyError(f"No public key cached for {username}")
+        return self._cache[username]
+
+
+class E2EECipher:
+    """Шифрование/расшифровка отдельных сообщений."""
+
+    @staticmethod
+    def encrypt(plaintext: str, peer_public_key: X25519PublicKey) -> Tuple[str, str, str, str]:
+        """
+        Генерирует ephemeral X25519, ECDH ephemeral->static, HKDF с salt, AES-256-GCM.
+        Возвращает (ciphertext_b64, ephemeral_pub_b64, nonce_b64, salt_b64).
+        """
+        ephemeral_priv = X25519PrivateKey.generate()
+        ephemeral_pub = ephemeral_priv.public_key()
+
+        shared = ephemeral_priv.exchange(peer_public_key)
+        salt = os.urandom(16)
+
+        key = HKDF(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            info=b"messenger-e2ee-v1"
+        ).derive(shared)
+
+        nonce = os.urandom(12)
+        aesgcm = AESGCM(key)
+        ciphertext = aesgcm.encrypt(nonce, plaintext.encode("utf-8"), None)
+
+        ephemeral_pub_b64 = base64.b64encode(
+            ephemeral_pub.public_bytes(
+                encoding=serialization.Encoding.Raw,
+                format=serialization.PublicFormat.Raw
+            )
+        ).decode("ascii")
+
+        return (
+            base64.b64encode(ciphertext).decode("ascii"),
+            ephemeral_pub_b64,
+            base64.b64encode(nonce).decode("ascii"),
+            base64.b64encode(salt).decode("ascii")
+        )
+
+    @staticmethod
+    def decrypt(
+        ciphertext_b64: str,
+        nonce_b64: str,
+        ephemeral_pub_b64: str,
+        salt_b64: str,
+        static_private_key: X25519PrivateKey
+    ) -> str:
+        """Получатель: ECDH static_priv × ephemeral_pub, HKDF, AES-GCM decrypt."""
+        ephemeral_pub = X25519PublicKey.from_public_bytes(
+            base64.b64decode(ephemeral_pub_b64)
+        )
+
+        shared = static_private_key.exchange(ephemeral_pub)
+        salt = base64.b64decode(salt_b64)
+        key = HKDF(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            info=b"messenger-e2ee-v1"
+        ).derive(shared)
+
+        ciphertext = base64.b64decode(ciphertext_b64)
+        nonce = base64.b64decode(nonce_b64)
+        aesgcm = AESGCM(key)
+        plaintext = aesgcm.decrypt(nonce, ciphertext, None)
+        return plaintext.decode("utf-8")
+
+
+# --------------------------------------------------------------------------- #
+# Утилиты для интеграции с ClientSocket
+# --------------------------------------------------------------------------- #
+
+def prepare_e2ee_message(
+    plaintext: str,
+    key_cache: PublicKeyCache,
+    recipient_username: str
+) -> dict:
     """
-    Преобразовать общий секрет (int) в ключ фиксированной длины (32 байта)
-    с помощью PBKDF2-HMAC-SHA256. Если соль не передана, генерируется новая.
-    Возвращает (key, salt) — соль нужна для расшифровки.
+    Зашифровать сообщение для конкретного получателя.
+    Возвращает payload для send_request("send_message", ...).
     """
-    if salt is None:
-        salt = secrets.token_bytes(16)
-    return hashlib.pbkdf2_hmac('sha256', shared_secret.to_bytes((shared_secret.bit_length() + 7) // 8, 'big'), salt, 100000, dklen=32), salt
+    try:
+        peer_key = key_cache.get(recipient_username)
+    except KeyError as e:
+        raise KeyError(f"Cannot encrypt: {e}")
+
+    ciphertext_b64, ephemeral_pub_b64, nonce_b64, salt_b64 = E2EECipher.encrypt(
+        plaintext, peer_key
+    )
+    return {
+        "content": ciphertext_b64,
+        "encrypted": True,
+        "ephemeral_key": ephemeral_pub_b64,
+        "nonce": nonce_b64,
+        "salt": salt_b64
+    }
 
 
-def encrypt_with_shared(plaintext: str, shared_secret: int) -> str:
+def decrypt_incoming_message(msg: dict, key_manager: KeyManager) -> str:
     """
-    Шифрует текст с использованием общего секрета DH.
-    Возвращает base64-строку: salt + зашифрованные данные.
+    Расшифровать входящее push-сообщение.
+    msg должен содержать: content, ephemeral_key, nonce, salt.
     """
-    key, salt = derive_key_from_shared(shared_secret)
-    encrypted = bytes([b ^ k for b, k in zip(plaintext.encode('utf-8'), cycle(key))])
-    return base64.b64encode(salt + encrypted).decode('ascii')
-
-def decrypt_with_shared(encrypted_b64: str, shared_secret: int) -> str:
-    """
-    Расшифровывает данные, зашифрованные функцией encrypt_with_shared.
-    """
-    raw = base64.b64decode(encrypted_b64)
-    salt = raw[:16]
-    encrypted_data = raw[16:]
-    key, _ = derive_key_from_shared(shared_secret, salt)  # передаём ту же соль
-    decrypted = bytes([b ^ k for b, k in zip(encrypted_data, cycle(key))])
-    return decrypted.decode('utf-8')
-
-
-if __name__ == "__main__":
-    salt = secrets.token_bytes(16)
-    password = "мой_секретный_пароль"
-    print(derive_key(password, salt))
-    original = "Привет, мир! Это тестовое сообщение."
-    
-    encrypted = encrypt(original, password)
-    print("Зашифровано (base64):", encrypted)
-    
-    decrypted = decrypt(encrypted, password)
-    print("Расшифровано:", decrypted)
-
-    print("-"*10)
-
-    #Клиент А
-    priv_a = generate_dh_private_key()
-    pub_a = compute_dh_public_key(priv_a)
-    print(f"Клиент А: приватный ключ = {priv_a}, публичный = {pub_a}")
-
-    #Клиент Б
-    priv_b = generate_dh_private_key()
-    pub_b = compute_dh_public_key(priv_b)
-    print(f"Клиент Б: приватный ключ = {priv_b}, публичный = {pub_b}")
-
-    # Обмен открытыми ключами (по сети)
-    # А вычисляет общий секрет на основе публичного ключа Б
-    shared_a = compute_shared_secret(priv_a, pub_b)
-    # Б вычисляет общий секрет на основе публичного ключа А
-    shared_b = compute_shared_secret(priv_b, pub_a)
-
-    # Секреты должны совпасть
-    assert shared_a == shared_b, "Общий секрет не совпал!"
-    print(f"Общий секрет (совпадает): {shared_a}")
-
-    # А шифрует сообщение для Б
-    msg = "Секретное сообщение для клиента Б!"
-    ciphertext = encrypt_with_shared(msg, shared_a)
-    print(f"Зашифрованное сообщение (base64): {ciphertext}")
-
-    # Б расшифровывает
-    decrypted_msg = decrypt_with_shared(ciphertext, shared_b)
-    print(f"Расшифрованное сообщение: {decrypted_msg}")
+    return E2EECipher.decrypt(
+        msg["content"],
+        msg["nonce"],
+        msg["ephemeral_key"],
+        msg["salt"],
+        key_manager.private_key
+    )
