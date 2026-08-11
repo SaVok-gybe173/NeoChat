@@ -30,11 +30,38 @@ server/
 └── config.ini
 
 client/
-├── main.py
-├── network/
-├── crypto/                   (CryptoAlgorithm, фабрика, реализации)
-├── key_manager/
-├── ui/                       (Tkinter/Qt/консоль)
-├── storage/                  (локальное хранилище)
-└── config.ini
+├── NeoChat/
+|   |   src/
+|   |   ├── assets/
+|   |   |   ├── icon.png
+|   |   |   └── splash_android.png
+|   |   ├── core/
+|   |   |   └── __info__.py
+|   |   ├── crypto/
+|   |   |   └── encrypted.py
+|   |   ├── network/
+|   |   |   ├── api.py
+|   |   |   └── socet.py
+|   |   ├── storege/
+|   |   |   ├── message/
+|   |   |   |   ├── bd.py
+|   |   |   |   └── structure.py
+|   |   |   └── server.py
+|   |   ├── ui/
+|   |   |   ├── add_server.py
+|   |   |   ├── entrance.py
+|   |   |   ├── registration.py
+|   |   |   └── server.py
+|   |   ├── config.ini
+|   |   ├── config.py
+|   |   ├── language.py
+|   |   └── main.py
+|   ├── tests/
+|   |   └── test_main.py
+|   ├── .gitignore
+|   ├── pyproject.toml
+|   └── README.md
+├── neochat-logo.ico
+├── neochat-logo.jpg
+└── neochat-logo.png
 ```
