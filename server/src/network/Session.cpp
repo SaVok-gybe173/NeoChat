@@ -5,7 +5,7 @@
 #include <iostream>
 #include <cstring>
 
-Session::Session(int socket, Router* router, CloseCallback onClose) : socket_(socket), router_(router), running_(false), onClose_(std::move(onClose)) {}
+Session::Session(PlatformSocket socket, Router* router, CloseCallback onClose) : socket_(socket), router_(router), running_(false), onClose_(std::move(onClose)) {}
 Session::~Session() {
     stop();
     if (thread_.joinable()) {
@@ -27,7 +27,7 @@ void Session::start() {
 void Session::stop() {
     bool expected = true;
     if (!running_.compare_exchange_strong(expected, false)) return;
-    if (socket_ >= 0) {
+    if (socket_ != INVALID_PLATFORM_SOCKET) {
         shutdown(socket_, SHUT_RDWR);
         CLOSE_SOCKET(socket_);
         socket_ = -1;
