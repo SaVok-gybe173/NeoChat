@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from .structure import Chat, Message
+from .structure import Chat, Message, Text
 import json
 
 def load(path):
@@ -82,7 +82,11 @@ def clearChats() -> None:
 
 def addChats(chat: Chat) -> None:
     global _chats
-    _chats.clear()
+    _chats.append(chat)
+
+def getChatId(id: int):
+    global _chats
+    return _chats[[i.id for i in _chats].index(id)]
 
 def getChats() -> list[Chat]:
     global _chats

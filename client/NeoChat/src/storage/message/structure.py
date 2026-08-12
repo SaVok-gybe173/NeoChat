@@ -8,10 +8,12 @@ BORDER = "#262b33"
 
 @dataclass
 class Message:
-    id: str                    # id сообщения
-    sender: str                # "me" | "them" | "system"
-    time: str                  # время отправки
-    sender_name: str = ""      # имя автора для групповых чатов (если sender == "them")
+    id: str                     # id сообщения
+    sender: str                 # "me" | "them" | "system"
+    time: str                   # время отправки
+    sender_name: str = ""       # имя автора для групповых чатов (если sender == "them")
+
+    type: str | None = None     #
 
     def draw(self, page: ft.Page) -> ft.Container:
         return
@@ -20,11 +22,12 @@ class Message:
 class Caption(Message):         # обычное изображение
     caption: str = ""           # путь к изображению
     id_caption: int = 0         # id изображения
+    type: str | None = "image"  # 
 
 @dataclass
 class Text(Message):            # Текст
-    text: str = ""
-
+    text: str = ""              #
+    type: str | None = "text"   #
     def draw(self, page):
         body = ft.Markdown(
                         self.text, selectable=True,
@@ -38,11 +41,12 @@ class Text(Message):            # Текст
 
 @dataclass
 class CaptionText(Text, Caption):# текст с изображением
-    pass
+    type: str | None = "text"
 
 @dataclass
 class File(Message):            # фаил
     file: str | None = None     # путь к файлу если есть
+    type: str | None = "file"
     id_file: int = 0            # id файла
 
 @dataclass
@@ -53,3 +57,4 @@ class Chat:
     status: str = "в сети"                                                                          # текущий статус
     members: List[str] = field(default_factory=list)                                                # список учасников если группа
     messages: List[Message | Caption | Text | CaptionText | File] = field(default_factory=list)     # сообщния
+    unread: bool = False                                                                            # есть ли новое сообщение

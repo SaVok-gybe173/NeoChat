@@ -1,6 +1,12 @@
 from typing import Callable
 from language import getLan
-from storage import getChats, getActiveChatId, Chat, getMyProfile, getView, getIsNarrow, setIsNarrow
+from storage import (getChats, getActiveChatId,
+                    Chat, getMyProfile, 
+                    getView, getIsNarrow, 
+                    setIsNarrow, getProfileTarget, 
+                    setActiveChatId, setView,
+                    getChatId, setProfileTarget)
+from config import CONFIG
 import flet as ft
 
 BG = "#0e1013"
@@ -21,6 +27,32 @@ def name_initials(name: str) -> str:
     letters = "".join(p[0] for p in parts[:2] if p)
     return letters.upper() or "?"
 
+def build_empty():
+    return ft.Container(
+        content=ft.Column(
+            controls=[
+                ft.Container(
+                    content=ft.Text("💬", size=24),
+                    width=56, height=56, border_radius=16,
+                    border=ft.Border.all(1, BORDER),
+                    alignment=ft.Alignment.CENTER,
+                ),
+                ft.Text("Выберите чат", size=15, weight=ft.FontWeight.W_600, color=TEXT_DIM),
+                ft.Text(
+                    "Откройте диалог слева, чтобы увидеть переписку. Пока ничего не выбрано.",
+                    size=13, color=TEXT_FAINT, text_align=ft.TextAlign.CENTER, width=260,
+                ),
+            ],
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            alignment=ft.MainAxisAlignment.CENTER,
+            spacing=10,
+        ),
+        alignment=ft.Alignment.CENTER,
+        expand=True,
+        bgcolor=BG,
+    )
+
+
 class ChatMenu:
     visible_chat = False
     visible_chat_list = False
@@ -34,12 +66,28 @@ class ChatMenu:
         self.root_row = ft.Row(controls=[self.sidebar_holder, self.main_holder], spacing=0, expand=True)
 
         # открытие чата
-        def open_chat():
-            pass
+        def open_chat(chat_id):
+            setActiveChatId(chat_id)
+            setView("chat")
+            chat: Chat = getChatId(chat_id)
+            if chat:
+                chat.unread = False
+            refresh()
 
         # открытие профиля
         def open_profile(kto: str):
-            pass
+            setProfileTarget(kto)
+            setView("profile")
+            refresh()
+
+        # возвращение обратно к чатам
+        def go_back(): 
+            if getView() == "profile":
+                setView("chat" if isinstance(getActiveChatId(), int) else "empty")
+            else:
+                setActiveChatId(None)
+                setView("empty")
+            refresh()
         
         def avatar(initials: Chat, size=36, is_group=False): # получение аватарки
             content = (
@@ -53,20 +101,18 @@ class ChatMenu:
                 radius=size / 2,
             )
         
-        def build_sidebar():
+        def build_sidebar():        # рендер чатов
             items = []
             for c in getChats():
                 last = c.messages[-1] if c.messages else None
-                if not last:
-                    preview = ""
-                elif last.type == "image":
-                    preview = "📷 Фото"
-                elif last.type == "code":
-                    preview = "💻 Код"
-                elif last.type == "card":
-                    preview = "📎 Файл"
-                else:
-                    preview = (last.text or "").replace("**", "").replace("`", "")
+
+                try:
+                    preview = "" if not last.type else getLan("Message", last.type)
+                except Exception:
+                    if last.type == "text":
+                        preview = last.text
+                    else: preview = ''
+
                 if c.is_group and last and last.sender == "them" and last.sender_name:
                     preview = f"{last.sender_name.split()[0]}: {preview}"
 
@@ -120,7 +166,7 @@ class ChatMenu:
                 border=ft.Border.only(bottom=ft.BorderSide(1, BORDER)),
             )
 
-            # ---- футер сайдбара: переход в свой профиль ----
+            # футер сайдбара: переход в свой профиль
             me_row = ft.Container(
                 content=ft.Row(
                     controls=[
@@ -146,9 +192,11 @@ class ChatMenu:
                     controls=[
                         header,
                         ft.Container(
-                            content=ft.ListView(controls=items, spacing=2, expand=True),
+                            content=ft.ListView(controls=items, spacing=2, expand=True) if items else ft.Row([ft.Text("Здесь ничего нет", size=13, color=TEXT_FAINT, text_align=ft.TextAlign.CENTER)],
+                                                                                                              alignment=ft.CrossAxisAlignment.CENTER),
                             padding=8,
                             expand=True,
+                            
                         ),
                         me_row,
                     ],
@@ -160,11 +208,11 @@ class ChatMenu:
                 width=300 if not getIsNarrow() else None,
                 expand=True if getIsNarrow() else False,
             )
-        page.add(self.root_row)
+        
 
-        def refresh():
+        def refresh():          # обновление состояние
             self.sidebar_holder.content = build_sidebar()
-            #self.main_holder.content = build_main()
+            self.main_holder.content = build_main()
     
             showing_main_only = getView() in ("chat", "profile")
             if getIsNarrow():
@@ -178,9 +226,9 @@ class ChatMenu:
                 self.main_holder.visible = True
                 self.main_holder.expand = True
 
-        def on_resize(e=None):
-            w = page.width or 1000
-            h = page.height or 700
+        def on_resize(e=None):          # ПЕРЕСТРОЙКА ЭКРАНА
+            w = page.width or CONFIG.getint("WINDOW", "width")
+            h = page.height or CONFIG.getint("WINDOW", "height")
             narrow = h > w
             if narrow != getIsNarrow():
                 setIsNarrow(narrow)
@@ -188,5 +236,14 @@ class ChatMenu:
 
             page.update()
 
+        def build_main():               # ДИСПЕТЧЕР ОСНОВНОЙ ОБЛАСТИ
+            if getView() == "profile":
+                return build_profile(getProfileTarget())
+            if getView() == "chat" and isinstance(getActiveChatId(), int):
+                return build_chat(getActiveChatId())
+            return build_empty()
+
         page.on_resize = on_resize
+        page.add(self.root_row)
+
         on_resize()

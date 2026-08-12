@@ -12,6 +12,12 @@ LAN: Dict[str, Dict[str, Dict[str, str] | str]] = {
         "send": "Отправить",
         "confirm": "Подтвердить",
 
+        "Message": {
+            "image": "📷 Фото",
+            "code": "💻 Код",
+            "file": "📎 Файл"
+        },
+
         "server":{
             "all-regions": "Все регионы",
             "ping": "Пинг",
