@@ -5,8 +5,9 @@ from storage import (getChats, getActiveChatId,
                     getView, getIsNarrow, 
                     setIsNarrow, getProfileTarget, 
                     setActiveChatId, setView,
-                    getChatId, setProfileTarget)
-from config import CONFIG
+                    getChatId, setProfileTarget,
+                    Message)
+from config import CONFIG, getPage
 import flet as ft
 
 BG = "#0e1013"
@@ -27,7 +28,7 @@ def name_initials(name: str) -> str:
     letters = "".join(p[0] for p in parts[:2] if p)
     return letters.upper() or "?"
 
-def build_empty():
+def build_empty(): # рендр пустого окна
     return ft.Container(
         content=ft.Column(
             controls=[
@@ -52,6 +53,117 @@ def build_empty():
         bgcolor=BG,
     )
 
+def avatar(initials: Chat, size=36, is_group=False): # получение аватарки
+    content = (
+        ft.Icon(icon=ft.Icons.GROUPS, size=size * 0.5, color="#ffffff")
+        if is_group else
+        ft.Text(initials.title[0], size=size * 0.35, weight=ft.FontWeight.BOLD, color="#ffffff")
+    )
+    return ft.CircleAvatar(
+        content=content,
+        bgcolor=GROUP_COLOR if is_group else ACCENT,
+        radius=size / 2,
+    )
+
+def render_message(m: Message, chat: Chat):
+    page = getPage()
+    if m.type == "system":
+        return ft.Row(
+            controls=[
+                ft.Container(
+                    content=ft.Text(m.text, size=11.5, color=TEXT_FAINT),
+                    bgcolor=PANEL_2,
+                    padding=ft.Padding.symmetric(horizontal=12, vertical=5),
+                    border_radius=20,
+                )
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+        )
+    is_me = m.sender == "me"
+    bubble_color = BUBBLE_USER if is_me else BUBBLE_ASSIST
+    sender_label = None
+    if chat.is_group and not is_me and m.sender_name:
+        sender_label = ft.Text(m.sender_name, size=11.5, weight=ft.FontWeight.W_600, color=ACCENT)
+    if m.type in ("text", "markdown"):
+        bubble = m.draw(page)
+    elif m.type == "code":
+        body = ft.Markdown(
+            f"```{m.lang}\n{m.code}\n```", selectable=True,
+            extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
+            code_theme="atom-one-dark",
+        )
+        bubble = ft.Container(
+            content=body, bgcolor="#0a0c0f", border=ft.Border.all(1, BORDER),
+            border_radius=10, padding=8,
+        )
+    elif m.type == "image":
+        bubble = ft.Container(
+            content=ft.Column(
+                controls=[
+                    ft.Image(src=m.src, width=240,
+                             border_radius=ft.BorderRadius.only(top_left=10, top_right=10)),
+                    ft.Container(
+                        content=ft.Row(
+                            controls=[
+                                ft.Text(m.caption, size=11.5, color=TEXT_DIM, expand=True),
+                                ft.IconButton(icon=ft.Icons.DOWNLOAD, icon_size=15, icon_color=TEXT_DIM,
+                                              tooltip="Скачать",
+                                              on_click=lambda e, s=m.src: download_file(s)),
+                            ],
+                        ),
+                        padding=ft.Padding.only(left=10, right=4, top=6, bottom=4),
+                    ) if m.caption else ft.Container(),
+                ],
+                spacing=0,
+            ),
+            border=ft.Border.all(1, BORDER),
+            border_radius=10,
+            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            ink=True,
+            on_click=lambda e, s=m.src, c=m.caption: open_image_viewer(s, c),
+        )
+    elif m.type == "card":
+        body = ft.Container(
+            content=ft.Row(
+                controls=[
+                    ft.Icon(icon=ft.Icons.INSERT_DRIVE_FILE, color=ACCENT, size=22),
+                    ft.Column(
+                        controls=[
+                            ft.Text(m.title, size=13, weight=ft.FontWeight.W_600, color=TEXT),
+                            ft.Text(m.sub, size=12, color=TEXT_DIM),
+                        ],
+                        spacing=2,
+                        expand=True,
+                    ),
+                    ft.Icon(icon=ft.Icons.DOWNLOAD, color=TEXT_DIM, size=18),
+                ],
+                spacing=10,
+            ),
+            bgcolor=PANEL_2, border=ft.Border.all(1, BORDER),
+            border_radius=10, padding=12,
+            ink=True,
+            on_click=lambda e, s=m.src: download_file(s),
+        )
+        bubble = ft.Container(
+            content=body, bgcolor=bubble_color, border=ft.Border.all(1, BORDER),
+            border_radius=14, padding=10,
+        )
+    else:
+        bubble = ft.Container()
+    meta = ft.Text(m.time, size=10.5, color=TEXT_FAINT)
+    column_controls = ([sender_label] if sender_label else []) + [bubble, meta]
+    return ft.Row(
+        controls=[
+            avatar(getMyProfile() if is_me else chat, size=28),
+            ft.Column(
+                controls=column_controls,
+                spacing=4,
+                horizontal_alignment=ft.CrossAxisAlignment.END if is_me else ft.CrossAxisAlignment.START,
+            ),
+        ],
+        spacing=10,
+        alignment=ft.MainAxisAlignment.END if is_me else ft.MainAxisAlignment.START,
+    )
 
 class ChatMenu:
     visible_chat = False
@@ -88,18 +200,6 @@ class ChatMenu:
                 setActiveChatId(None)
                 setView("empty")
             refresh()
-        
-        def avatar(initials: Chat, size=36, is_group=False): # получение аватарки
-            content = (
-                ft.Icon(icon=ft.Icons.GROUPS, size=size * 0.5, color="#ffffff")
-                if is_group else
-                ft.Text(initials.title[0], size=size * 0.35, weight=ft.FontWeight.BOLD, color="#ffffff")
-            )
-            return ft.CircleAvatar(
-                content=content,
-                bgcolor=GROUP_COLOR if is_group else ACCENT,
-                radius=size / 2,
-            )
         
         def build_sidebar():        # рендер чатов
             items = []
@@ -209,6 +309,115 @@ class ChatMenu:
                 expand=True if getIsNarrow() else False,
             )
         
+
+        def build_chat(chat_id):
+            chat = getChatId(chat_id)
+            if not chat:
+                return build_empty()
+    
+            header = ft.Container(
+                content=ft.Row(
+                    controls=[
+                        ft.IconButton(icon=ft.Icons.ARROW_BACK, icon_color=TEXT,
+                                      visible=getIsNarrow(), on_click=lambda e: go_back()),
+                        ft.Container(
+                            content=ft.Row(
+                                controls=[
+                                    avatar(chat, is_group=chat.is_group),
+                                    ft.Column(
+                                        controls=[
+                                            ft.Text(chat.title, size=14.5, weight=ft.FontWeight.W_600, color=TEXT),
+                                            ft.Text(
+                                                f"{len(chat.members)} участников" if chat.is_group else chat.status,
+                                                size=12, color=TEXT_FAINT,
+                                            ),
+                                        ],
+                                        spacing=0,
+                                    ),
+                                ],
+                                spacing=12,
+                            ),
+                            on_click=lambda e: open_profile(chat.id),
+                            ink=True,
+                            border_radius=8,
+                            padding=ft.Padding.symmetric(horizontal=4, vertical=2),
+                        ),
+                    ],
+                    spacing=4,
+                ),
+                padding=ft.Padding.symmetric(horizontal=16, vertical=14),
+                border=ft.Border.only(bottom=ft.BorderSide(1, BORDER)),
+            )
+    
+            messages_list = ft.ListView(
+                controls=[render_message(m, chat) for m in chat.messages],
+                spacing=16,
+                expand=True,
+                auto_scroll=True,
+            )
+    
+            message_field = ft.TextField(
+                hint_text="Написать сообщение… (Enter — отправить, Shift+Enter — новая строка)",
+                border_color=BORDER,
+                bgcolor=PANEL_2,
+                color=TEXT,
+                border_radius=12,
+                content_padding=ft.Padding.symmetric(horizontal=14, vertical=10),
+                multiline=True,
+                shift_enter=True,
+                min_lines=1,
+                max_lines=6,
+                expand=True,
+                autofocus=True,
+            )
+    
+            def handle_send(e): # добавление сообщение
+                value = (message_field.value or "").strip()
+                if not value:
+                    return
+                chat.messages.append(Message(
+                    id=f"m{len(chat.messages) + 1}",
+                    sender="me",
+                    time=datetime.now().strftime("%H:%M"),
+                    type="text",
+                    text=value,
+                ))
+                refresh()
+    
+            message_field.on_submit = handle_send
+    
+            composer = ft.Container(
+                content=ft.Row(
+                    controls=[
+                        message_field,
+                        ft.IconButton(
+                            icon=ft.Icons.SEND_ROUNDED,
+                            icon_color="#ffffff",
+                            bgcolor=ACCENT,
+                            icon_size=18,
+                            on_click=handle_send,
+                        ),
+                    ],
+                    spacing=10,
+                    vertical_alignment=ft.CrossAxisAlignment.END,
+                ),
+                padding=ft.Padding.symmetric(horizontal=20, vertical=14),
+                border=ft.Border.only(top=ft.BorderSide(1, BORDER)),
+            )
+    
+            return ft.Container(
+                content=ft.Column(
+                    controls=[
+                        header,
+                        ft.Container(content=messages_list, padding=20, expand=True),
+                        composer,
+                    ],
+                    spacing=0,
+                    expand=True,
+                ),
+                expand=True,
+                bgcolor=BG,
+            )
 
         def refresh():          # обновление состояние
             self.sidebar_holder.content = build_sidebar()

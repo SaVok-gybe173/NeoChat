@@ -34,10 +34,11 @@ class Text(Message):            # Текст
                         extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
                         code_theme="atom-one-dark",
                     )
-        bubble = ft.Container(
+        return ft.Container(
                         content=body, bgcolor=BUBBLE_USER if self.sender == "me" else BUBBLE_ASSIST, border=ft.Border.all(1, BORDER),
                         border_radius=14, padding=ft.Padding.symmetric(horizontal=14, vertical=10),
                     )
+        
 
 @dataclass
 class CaptionText(Text, Caption):# текст с изображением

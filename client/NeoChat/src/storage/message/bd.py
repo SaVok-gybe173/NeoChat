@@ -84,7 +84,7 @@ def addChats(chat: Chat) -> None:
     global _chats
     _chats.append(chat)
 
-def getChatId(id: int):
+def getChatId(id: int) -> Chat:
     global _chats
     return _chats[[i.id for i in _chats].index(id)]
 
