@@ -80,8 +80,8 @@ LAN: Dict[str, Dict[str, Dict[str, str] | str]] = {
             "enter-6-digit-code-sent-emai": "Введите 6-значный код, отправленный на вашу почту"
 
             }
+        }
     }
-}
 
 # функция которая устанавливает глабальный язык
 def setLanguage(lan: str) -> None:

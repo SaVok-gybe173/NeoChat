@@ -6,7 +6,8 @@ from storage import (getChats, getActiveChatId,
                     setIsNarrow, getProfileTarget, 
                     setActiveChatId, setView,
                     getChatId, setProfileTarget,
-                    Message)
+                    Message, Text)
+from datetime import datetime
 from config import CONFIG, getPage
 import flet as ft
 
@@ -348,14 +349,16 @@ class ChatMenu:
                 padding=ft.Padding.symmetric(horizontal=16, vertical=14),
                 border=ft.Border.only(bottom=ft.BorderSide(1, BORDER)),
             )
-    
+            
             messages_list = ft.ListView(
                 controls=[render_message(m, chat) for m in chat.messages],
                 spacing=16,
-                expand=True,
                 auto_scroll=True,
+                expand=True,
+                
+                
             )
-    
+            messages_list.scroll_to(offset=-1, duration=0)
             message_field = ft.TextField(
                 hint_text="Написать сообщение… (Enter — отправить, Shift+Enter — новая строка)",
                 border_color=BORDER,
@@ -375,14 +378,19 @@ class ChatMenu:
                 value = (message_field.value or "").strip()
                 if not value:
                     return
-                chat.messages.append(Message(
+                text = Text(
                     id=f"m{len(chat.messages) + 1}",
                     sender="me",
                     time=datetime.now().strftime("%H:%M"),
                     type="text",
                     text=value,
-                ))
-                refresh()
+                )
+                chat.messages.append(text)
+
+                message_field.value = ''
+
+                messages_list.controls.append(render_message(text, chat))
+                messages_list.scroll_to(offset=-1, duration=0)
     
             message_field.on_submit = handle_send
     

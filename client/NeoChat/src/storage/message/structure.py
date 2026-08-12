@@ -47,7 +47,7 @@ class CaptionText(Text, Caption):# текст с изображением
 @dataclass
 class File(Message):            # фаил
     file: str | None = None     # путь к файлу если есть
-    type: str | None = "file"
+    type: str | None = "file"   # 
     id_file: int = 0            # id файла
 
 @dataclass
