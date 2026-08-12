@@ -106,3 +106,6 @@ setMyProfile(Chat(0, "null"))
 setIsNarrow(False)
 setActiveChatId(None)
 _createChats()
+
+addChats(Chat(1, "null", messages=[Text(0, "them", "21/23", text="```Нет ничего классного```")]))
+addChats(Chat(2, "null1", messages=[Text(0, "them", "21/23", text="Ты чего?")]))

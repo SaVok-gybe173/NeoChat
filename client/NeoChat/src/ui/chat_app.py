@@ -21,8 +21,6 @@ TEXT_FAINT = "#565c66"
 ACCENT = "#5b8cff"
 ACCENT_DIM = "#2a3a5c"
 GROUP_COLOR = "#8f6bff"
-BUBBLE_USER = "#2a3550"
-BUBBLE_ASSIST = "#1b1f26"
 
 def name_initials(name: str) -> str:
     parts = name.split()
@@ -80,77 +78,15 @@ def render_message(m: Message, chat: Chat):
             ],
             alignment=ft.MainAxisAlignment.CENTER,
         )
+    
     is_me = m.sender == "me"
-    bubble_color = BUBBLE_USER if is_me else BUBBLE_ASSIST
+
     sender_label = None
     if chat.is_group and not is_me and m.sender_name:
         sender_label = ft.Text(m.sender_name, size=11.5, weight=ft.FontWeight.W_600, color=ACCENT)
-    if m.type in ("text", "markdown"):
-        bubble = m.draw(page)
-    elif m.type == "code":
-        body = ft.Markdown(
-            f"```{m.lang}\n{m.code}\n```", selectable=True,
-            extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
-            code_theme="atom-one-dark",
-        )
-        bubble = ft.Container(
-            content=body, bgcolor="#0a0c0f", border=ft.Border.all(1, BORDER),
-            border_radius=10, padding=8,
-        )
-    elif m.type == "image":
-        bubble = ft.Container(
-            content=ft.Column(
-                controls=[
-                    ft.Image(src=m.src, width=240,
-                             border_radius=ft.BorderRadius.only(top_left=10, top_right=10)),
-                    ft.Container(
-                        content=ft.Row(
-                            controls=[
-                                ft.Text(m.caption, size=11.5, color=TEXT_DIM, expand=True),
-                                ft.IconButton(icon=ft.Icons.DOWNLOAD, icon_size=15, icon_color=TEXT_DIM,
-                                              tooltip="Скачать",
-                                              on_click=lambda e, s=m.src: download_file(s)),
-                            ],
-                        ),
-                        padding=ft.Padding.only(left=10, right=4, top=6, bottom=4),
-                    ) if m.caption else ft.Container(),
-                ],
-                spacing=0,
-            ),
-            border=ft.Border.all(1, BORDER),
-            border_radius=10,
-            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-            ink=True,
-            on_click=lambda e, s=m.src, c=m.caption: open_image_viewer(s, c),
-        )
-    elif m.type == "card":
-        body = ft.Container(
-            content=ft.Row(
-                controls=[
-                    ft.Icon(icon=ft.Icons.INSERT_DRIVE_FILE, color=ACCENT, size=22),
-                    ft.Column(
-                        controls=[
-                            ft.Text(m.title, size=13, weight=ft.FontWeight.W_600, color=TEXT),
-                            ft.Text(m.sub, size=12, color=TEXT_DIM),
-                        ],
-                        spacing=2,
-                        expand=True,
-                    ),
-                    ft.Icon(icon=ft.Icons.DOWNLOAD, color=TEXT_DIM, size=18),
-                ],
-                spacing=10,
-            ),
-            bgcolor=PANEL_2, border=ft.Border.all(1, BORDER),
-            border_radius=10, padding=12,
-            ink=True,
-            on_click=lambda e, s=m.src: download_file(s),
-        )
-        bubble = ft.Container(
-            content=body, bgcolor=bubble_color, border=ft.Border.all(1, BORDER),
-            border_radius=14, padding=10,
-        )
-    else:
-        bubble = ft.Container()
+
+    bubble = m.draw(page)
+
     meta = ft.Text(m.time, size=10.5, color=TEXT_FAINT)
     column_controls = ([sender_label] if sender_label else []) + [bubble, meta]
     return ft.Row(
@@ -188,7 +124,7 @@ class ChatMenu:
             refresh()
 
         # открытие профиля
-        def open_profile(kto: str):
+        def open_profile(kto: str | int):
             setProfileTarget(kto)
             setView("profile")
             refresh()
@@ -201,8 +137,9 @@ class ChatMenu:
                 setActiveChatId(None)
                 setView("empty")
             refresh()
-        
-        def build_sidebar():        # рендер чатов
+
+        # рендер чатов
+        def build_sidebar():
             items = []
             for c in getChats():
                 last = c.messages[-1] if c.messages else None
@@ -313,7 +250,11 @@ class ChatMenu:
 
         def build_chat(chat_id):
             chat = getChatId(chat_id)
-            if not chat:
+
+            if not(chat.render is None):
+                chat.render.update()
+                return chat.render
+            elif not chat:
                 return build_empty()
     
             header = ft.Container(
@@ -412,8 +353,8 @@ class ChatMenu:
                 padding=ft.Padding.symmetric(horizontal=20, vertical=14),
                 border=ft.Border.only(top=ft.BorderSide(1, BORDER)),
             )
-    
-            return ft.Container(
+
+            chat.render = ft.Container(
                 content=ft.Column(
                     controls=[
                         header,
@@ -426,6 +367,8 @@ class ChatMenu:
                 expand=True,
                 bgcolor=BG,
             )
+
+            return chat.render
 
         def refresh():          # обновление состояние
             self.sidebar_holder.content = build_sidebar()
