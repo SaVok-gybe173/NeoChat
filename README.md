@@ -30,26 +30,27 @@ server/
 └── config.ini
 
 client/
-├── NeoChat/
+├── .venv/                          (python 3.13.7)
+├── NeoChat/                        
 |   |   src/
-|   |   ├── assets/
+|   |   ├── assets/                 (иконки для сборки)
 |   |   |   ├── icon.png
 |   |   |   └── splash_android.png
-|   |   ├── core/
+|   |   ├── core/                   (ядро)
 |   |   |   └── __info__.py
-|   |   ├── crypto/
+|   |   ├── crypto/                 (шифрование)
 |   |   |   ├── __init__.py
 |   |   |   └── encrypted.py
-|   |   ├── network/
+|   |   ├── network/                (вся сетевая инфроструктура)
 |   |   |   ├── __init__.py
 |   |   |   ├── api.py
 |   |   |   └── client_socket.py
-|   |   ├── storage/
+|   |   ├── storage/                (структера всего локального хранилища)
 |   |   |   ├── message/
 |   |   |   |   ├── bd.py
 |   |   |   |   └── structure.py
 |   |   |   └── server.py
-|   |   ├── ui/
+|   |   ├── ui/                     (графический интерфейс)
 |   |   |   ├── add_server.py
 |   |   |   ├── entrance.py
 |   |   |   ├── registration.py
@@ -61,9 +62,9 @@ client/
 |   ├── tests/
 |   |   └── test_main.py
 |   ├── .gitignore
-|   ├── pyproject.toml
+|   ├── pyproject.toml              (конфигурация сдля сборки)
 |   └── README.md
-├── __init__.py
+├── requirements.txt                (библеотеки)
 ├── neochat-logo.ico
 ├── neochat-logo.jpg
 └── neochat-logo.png
