@@ -29,7 +29,7 @@ std::string Logger::currentTimestamp() {
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
 
     std::tm tm_buf;
-    thread_safe_localtime(&time_t_now, &tm_buf);
+    localtime_r(&time_t_now, &tm_buf);
 
     std::stringstream ss;
     ss << std::put_time(&tm_buf, "%Y-%m-%d %H:%M:%S");
