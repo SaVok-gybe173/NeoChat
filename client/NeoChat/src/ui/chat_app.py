@@ -250,9 +250,8 @@ class ChatMenu:
 
         def build_chat(chat_id):
             chat = getChatId(chat_id)
-
             if not(chat.render is None):
-                chat.render.update()
+                page.run_task(chat.render.content.controls[1].content.scroll_to, offset=-1, duration=0)
                 return chat.render
             elif not chat:
                 return build_empty()
@@ -299,7 +298,7 @@ class ChatMenu:
                 
                 
             )
-            messages_list.scroll_to(offset=-1, duration=0)
+            page.run_task(messages_list.scroll_to, offset=-1, duration=0)
             message_field = ft.TextField(
                 hint_text="Написать сообщение… (Enter — отправить, Shift+Enter — новая строка)",
                 border_color=BORDER,
@@ -327,11 +326,9 @@ class ChatMenu:
                     text=value,
                 )
                 chat.messages.append(text)
-
                 message_field.value = ''
-
                 messages_list.controls.append(render_message(text, chat))
-                messages_list.scroll_to(offset=-1, duration=0)
+                #page.run_task(messages_list.scroll_to, offset=-1, duration=0)
     
             message_field.on_submit = handle_send
     

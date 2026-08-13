@@ -78,10 +78,82 @@ LAN: Dict[str, Dict[str, Dict[str, str] | str]] = {
             "send-code-again": "Отправить код повторно",
             "confirmation": "Подтверждение",
             "enter-6-digit-code-sent-emai": "Введите 6-значный код, отправленный на вашу почту"
+        }
 
-            }
+    },
+    "en":{
+        "Cancellation": "Cancel",
+        "Add": "Add",
+        "join": "join",
+        "log-in": "Enter",
+        "send": "Send",
+        "confirm": "Confirm",
+
+        "server": {
+            "all-regions": "All regions",
+            "ping": "Ping",
+            "online": "Online", "offline": "Offline", "maintenance": "Maintenance",
+            "connecting-to": "Connecting to",
+            "autoconnecting-to": "Auto-connecting to",
+            "ms": "ms",
+            "Popularity": "Popularity",
+            "Alphabet": "Alphabet",
+            "Servers-not-found": "No servers found",
+            "list-servers-updated": "Server list updated",
+            "server-IP-address": "Server IP address",
+            "server-by-IP-address": "Add server by IP",
+            "Server-search": "Searching for server...",
+            "update-list": "Update list",
+            "Server-selection": "Server selection",
+            "add-ip": "Add by IP",
+            "fast-connection": "Fast connection"
+            
+        },
+        "RegistrationMenu": {
+            "fill-fields": "Fill in all fields",
+            "passwords-match": "Passwords do not match",
+            "login": "Login",
+            "come-login": "Choose a login",
+            "email": "Email",
+            "example-mail": "example@mail.com",
+            "password": "Password",
+            "confirm-password": "Confirm password",
+            "register": "Register",
+            "create-account": "Create an account",
+            "please-fill-registration-data": "Please fill in the registration data",
+            "there-already-account": "Already have an account?"
+
+        },
+        "RecoveryMenu": {
+            "enter-email": "Enter email",
+            "enter-valid-email": "Enter a valid email",
+            "return-entrance": "Return to login",
+            "password-recovery": "Password recovery",
+            "enter-email-send-code-reset": "Enter your email and we’ll send a reset code"
+
+
+        },
+        "EntranceServer": {
+            "login-email": "Email",
+            "fill-login-password": "Fill in login and password",
+            "forgot-password": "Forgot your password?",
+            "account-login": "Account login",
+            "enter-login-password-continue": "Enter login and password to continue",
+            "no-account": "No account?"
+
+        },
+        "CodMenu": {
+            "code-from-letter": "Code from the email",
+            "enter-6-digits": "Enter 6 digits",
+            "enter-code": "Enter the code",
+            "code-must-contain-exactly-6-digits": "The code must contain exactly 6 digits",
+            "send-code-again": "Resend code",
+            "confirmation": "Confirmation",
+            "enter-6-digit-code-sent-emai": "Enter the 6-digit code sent to your email"
+                
         }
     }
+}
 
 # функция которая устанавливает глабальный язык
 def setLanguage(lan: str) -> None:
