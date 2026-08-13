@@ -155,6 +155,7 @@ client/
   "username":"alice",
   "password":"secret",
   "device": {
+    "app_version": "0.0.1",
     "os":"Linux",
     "os_release":"5.15.0",
     "os_version":"#1 SMP ...",

@@ -259,8 +259,8 @@ class ChatMenu:
             header = ft.Container(
                 content=ft.Row(
                     controls=[
-                        ft.IconButton(icon=ft.Icons.ARROW_BACK, icon_color=TEXT,
-                                      visible=getIsNarrow(), on_click=lambda e: go_back()),
+                        ft.IconButton(icon=ft.Icons.ARROW_BACK, icon_color=TEXT, #visible=getIsNarrow(),
+                                       on_click=lambda e: go_back()),
                         ft.Container(
                             content=ft.Row(
                                 controls=[
@@ -300,7 +300,7 @@ class ChatMenu:
             )
             page.run_task(messages_list.scroll_to, offset=-1, duration=0)
             message_field = ft.TextField(
-                hint_text="Написать сообщение… (Enter — отправить, Shift+Enter — новая строка)",
+                hint_text="Написать сообщение…",
                 border_color=BORDER,
                 bgcolor=PANEL_2,
                 color=TEXT,
