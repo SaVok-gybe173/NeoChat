@@ -7,45 +7,28 @@ import os
 
 def get_flet_font_path() -> str:
     """
-    Возвращает путь к файлу шрифта, который Flet использует по умолчанию (Roboto).
-    Если файл не найден — возвращает путь к системному шрифту как fallback.
+    Возвращает путь к .ttf шрифту, который лежит внутри самого проекта
+    (рядом с этим файлом), а не внутри пакета flet и не в системе.
+ 
+    Это важно: при сборке в APK/exe пакуется исходный код приложения,
+    а НЕ ассеты установленного pip-пакета flet и НЕ системные шрифты
+    ОС (arial.ttf на Android просто не существует). Поэтому шрифт
+    должен физически лежать в репозитории проекта.
     """
-    # Директория, где установлен пакет flet
-    flet_dir = os.path.dirname(ft.__file__)
-
-    # Возможные пути внутри пакета flet (разные версии хранят по-разному)
-    candidates = [
-        os.path.join(flet_dir, "assets", "fonts", "Roboto-Regular.ttf"),
-        os.path.join(flet_dir, "assets", "Roboto-Regular.ttf"),
-        os.path.join(flet_dir, "core", "assets", "fonts", "Roboto-Regular.ttf"),
-        os.path.join(flet_dir, "controls", "assets", "fonts", "Roboto-Regular.ttf"),
-        os.path.join(flet_dir, "_internal", "assets", "fonts", "Roboto-Regular.ttf"),
-    ]
-
-    # Ищем шрифт в директории пакета flet
-    for path in candidates:
-        if os.path.isfile(path):
-            return path
-
-    # Если не нашли по известным путям — ищем рекурсивно
-    for root, dirs, files in os.walk(flet_dir):
-        for f in files:
-            if f.lower() in ("roboto-regular.ttf", "roboto.ttf", "notosans-regular.ttf"):
-                return os.path.join(root, f)
-
-    # Fallback: системные шрифты
-    fallbacks = [
-        "arial.ttf",                              # Windows
-        "C:/Windows/Fonts/arial.ttf",             # Windows абсолютный
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Linux
-        "/System/Library/Fonts/Helvetica.ttc",    # macOS
-    ]
-    for fb in fallbacks:
-        if os.path.isfile(fb):
-            return fb
-
-    raise FileNotFoundError("Шрифт Flet не найден. Проверьте установку пакета.")
-
+    here = os.path.dirname(os.path.abspath(__file__))
+    font_path = os.path.join(here, "fonts", "Roboto-Regular.ttf")
+ 
+    if os.path.isfile(font_path):
+        return font_path
+ 
+    raise FileNotFoundError(
+        f"Шрифт не найден по пути {font_path}. "
+        "Положите Roboto-Regular.ttf в storage/message/fonts/ "
+        "и убедитесь, что эта папка не исключена из сборки "
+        "(app.exclude в pyproject.toml)."
+    )
+ 
+ 
 BG = "#0e1013"
 PANEL = "#15181d"
 PANEL_2 = "#1b1f26"
@@ -58,18 +41,11 @@ ACCENT_DIM = "#2a3a5c"
 GROUP_COLOR = "#8f6bff"
 BUBBLE_USER = "#2a3550"
 BUBBLE_ASSIST = "#1b1f26"
+ 
+# Загружаем шрифт из собственных ресурсов проекта.
+_font = ImageFont.truetype(get_flet_font_path(), size=14)
 
-# Загружаем тот же шрифт, что использует приложение
-# (путь к .ttf/.otf — обычный шрифт системы или тот, что задан в Theme)
 
-try:
-    _font = ImageFont.truetype(get_flet_font_path(), size=14)
-except:
-    try:
-        _font = ImageFont.truetype("arial.ttf", size=14)
-    except: pass
-
-    
 def measure_width(text: str) -> int:
     return int(_font.getlength(text))
 

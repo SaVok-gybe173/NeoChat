@@ -1,4 +1,5 @@
 #pragma once
+#include "../platform.hpp"
 #include <string>
 #include <atomic>
 #include <unordered_map>
