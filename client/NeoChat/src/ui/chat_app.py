@@ -401,6 +401,7 @@ class ChatMenu:
             return build_empty()
 
         page.on_resize = on_resize
-        page.add(self.root_row)
-
+        refresh()
         on_resize()
+        print(self.root_row)
+        page.add(self.root_row)

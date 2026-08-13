@@ -2,6 +2,49 @@ from dataclasses import dataclass, field
 from typing import List
 from PIL import ImageFont
 import flet as ft
+import os
+
+
+def get_flet_font_path() -> str:
+    """
+    Возвращает путь к файлу шрифта, который Flet использует по умолчанию (Roboto).
+    Если файл не найден — возвращает путь к системному шрифту как fallback.
+    """
+    # Директория, где установлен пакет flet
+    flet_dir = os.path.dirname(ft.__file__)
+
+    # Возможные пути внутри пакета flet (разные версии хранят по-разному)
+    candidates = [
+        os.path.join(flet_dir, "assets", "fonts", "Roboto-Regular.ttf"),
+        os.path.join(flet_dir, "assets", "Roboto-Regular.ttf"),
+        os.path.join(flet_dir, "core", "assets", "fonts", "Roboto-Regular.ttf"),
+        os.path.join(flet_dir, "controls", "assets", "fonts", "Roboto-Regular.ttf"),
+        os.path.join(flet_dir, "_internal", "assets", "fonts", "Roboto-Regular.ttf"),
+    ]
+
+    # Ищем шрифт в директории пакета flet
+    for path in candidates:
+        if os.path.isfile(path):
+            return path
+
+    # Если не нашли по известным путям — ищем рекурсивно
+    for root, dirs, files in os.walk(flet_dir):
+        for f in files:
+            if f.lower() in ("roboto-regular.ttf", "roboto.ttf", "notosans-regular.ttf"):
+                return os.path.join(root, f)
+
+    # Fallback: системные шрифты
+    fallbacks = [
+        "arial.ttf",                              # Windows
+        "C:/Windows/Fonts/arial.ttf",             # Windows абсолютный
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Linux
+        "/System/Library/Fonts/Helvetica.ttc",    # macOS
+    ]
+    for fb in fallbacks:
+        if os.path.isfile(fb):
+            return fb
+
+    raise FileNotFoundError("Шрифт Flet не найден. Проверьте установку пакета.")
 
 BG = "#0e1013"
 PANEL = "#15181d"
@@ -18,8 +61,15 @@ BUBBLE_ASSIST = "#1b1f26"
 
 # Загружаем тот же шрифт, что использует приложение
 # (путь к .ttf/.otf — обычный шрифт системы или тот, что задан в Theme)
-_font = ImageFont.truetype("arial.ttf", size=14)  # подставьте свой размер/шрифт
 
+try:
+    _font = ImageFont.truetype(get_flet_font_path(), size=14)
+except:
+    try:
+        _font = ImageFont.truetype("arial.ttf", size=14)
+    except: pass
+
+    
 def measure_width(text: str) -> int:
     return int(_font.getlength(text))
 
@@ -82,6 +132,7 @@ class Caption(Message):         # обычное изображение
 class Text(Message):            # Текст
     text: str = ""              # главный текст
     type: str | None = "text"   # тип
+
     def draw(self, page):
         bubble_color = BUBBLE_USER if self.sender == "me" else BUBBLE_ASSIST
 
@@ -93,7 +144,7 @@ class Text(Message):            # Текст
         )
 
         max_width = 300
-        padding_extra = 30  # отступы контейнера
+        padding_extra = 40  # отступы контейнера
 
         lines = self.text.split('\n')
         longest_line = max(lines, key=len)
@@ -155,6 +206,7 @@ class File(Message):            # фаил
 class Code(Text):
     lang: str = 'python'        # язык для подсветки
     type: str = "code"          # тип
+    
     def draw(self, page):
         body = ft.Markdown(
             f"```{self.lang}\n{self.text}\n```", selectable=True,

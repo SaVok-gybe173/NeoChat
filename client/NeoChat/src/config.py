@@ -18,19 +18,42 @@ def getPage() -> ft.Page:
     global _page
     return _page
 
-CONFIG = configparser.ConfigParser()
-CONFIG.read("config.ini")
-
 def saveConfig():
-    pass
+    with open(CONFIG_PATH, 'w', encoding="utf-8") as f:
+        CONFIG.write(f)
 
 NAME = "Neo Chat"
-HOME = os.path.join(os.path.expanduser('~'), "NeoChat") # путь к корневой папки
-LAN_PATH = os.path.join(HOME, "langes") # путь к списку языков
 
-if not os.path.isdir(HOME): os.makedirs(HOME)
-if not os.path.isdir(LAN_PATH): os.makedirs(LAN_PATH)
-    
+# FLET_APP_STORAGE_DATA - директория, куда приложению разрешено писать
+# на Android/iOS/desktop. Локально (flet run) тоже работает и указывает
+# на <project>/.flet/storage/data. Фолбэк на "." на случай, если
+# переменная почему-то не установлена (например, запуск не через flet run).
+_APP_STORAGE = os.getenv("FLET_APP_STORAGE_DATA", ".")  # можно заменить на os.path.join(os.path.expanduser('~'), "NeoChat"), но на телефонах не будет работать
+
+HOME = os.path.join(_APP_STORAGE, "NeoChat")  # путь к корневой папке
+CONFIG_PATH = os.path.join(HOME, "config.ini")
+LAN_PATH = os.path.join(HOME, "langes")  # путь к списку языков
+
+if not os.path.isdir(HOME):
+    os.makedirs(HOME)
+if not os.path.isdir(LAN_PATH):
+    os.makedirs(LAN_PATH)
+if not os.path.isfile(CONFIG_PATH):
+    with open(CONFIG_PATH, 'w', encoding="utf-8") as f:
+        f.write("""
+[DATABASE]
+host = 127.0.0.1
+port = 8080
+
+[WINDOW]
+mode = 0
+
+width = 1000
+height = 700
+""")
 
 
 THEME_MODS = [ft.ThemeMode.LIGHT, ft.ThemeMode.DARK]
+
+CONFIG = configparser.ConfigParser()
+CONFIG.read(CONFIG_PATH)  # раньше тут было "config.ini" - неверный относительный путь
