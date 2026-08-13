@@ -1,4 +1,4 @@
-from storage.server import SERVERS, addServer, Server, updateServer, configStoregeServer
+from storage.server import SERVERS, addServer, Server, updateServer, configStoregeServer, serverSet
 from language import LAN, getLan
 from typing import Callable
 
@@ -35,11 +35,21 @@ class ServerMenu:
                 render_list()
             return handler
     
-        def connect(srv): # подключение
-            def handler(e):
-                page.show_dialog(
-                    ft.SnackBar(ft.Text(f"{getLan("server", "connecting-to")} «{srv.name}»..."), bgcolor="#1d9e75")
-                )
+        def connect(srv: Server): # подключение
+            coro = srv.conect()
+            
+            if coro:
+                serverSet(coro)
+                def handler(e):
+                    page.show_dialog(
+                        ft.SnackBar(ft.Text(f"{getLan("server", "connecting-to")} «{srv.name}»..."), bgcolor="#1d9e75")
+                    )
+            else:
+                def handler(e):
+                    page.show_dialog(
+                        ft.SnackBar(ft.Text(f"{getLan("server", "connecting-to")} «{srv.name}»..."), bgcolor="#c21010")
+                    )
+
             return handler
     
         def server_row(srv: Server):
@@ -96,7 +106,7 @@ class ServerMenu:
                                 ft.ElevatedButton(
                                     getLan("join"),
                                     disabled=disabled,
-                                    on_click=connect(srv),
+                                    on_click= lambda e, s=srv: connect(s),
                                     bgcolor=ft.Colors.WHITE if not disabled else None,
                                     color=ft.Colors.BLACK if not disabled else None,
                                 ),

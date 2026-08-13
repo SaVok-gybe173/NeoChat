@@ -11,6 +11,10 @@ class ClientSocket:
     TCP-клиент для мессенджера.
     Протокол: 4 байта big-endian (длина) + JSON payload.
     """
+    _closed = False
+    running = False
+    listener_thread: threading.Thread | None = None
+
 
     def __init__(self, timeout: float = 30.0):
         self.sock: socket.socket | None = None
@@ -19,9 +23,10 @@ class ClientSocket:
         self.pending: dict[str, queue.Queue] = {}
         self.pending_lock = threading.Lock()
         self.push_callbacks: list[callable] = []
-        self.listener_thread: threading.Thread | None = None
-        self.running = False
+
         self._closed = False
+        self.running = False
+        self.listener_thread: threading.Thread | None = None
 
     def connect(self, host: str, port: int) -> bool:
         """Установить TCP-соединение. Возвращает True при успехе."""

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from network.api import getActive, getName, getRegion, getMode, ping, EXCEPTIONS
-from config import HOME
+from network.client_socket import ClientSocket
+from config import HOME, setScene
 
 import os
 import json
@@ -18,9 +19,15 @@ class Server:
     favorite: bool = False  # избранное
     locked: bool = False    # блокеровка
 
+    def conect(self):
+        soc = ClientSocket()
+        return soc.connect(self.ip, self.port)
+        
+        
+        
 # список сервров
 SERVERS: list[Server] = [
-    Server("195.208.119.133", 8080, "Main Neo Chat RU #1", "RU", "Main", 40, locked=True, favorite=True),
+    Server("195.208.119.133", 8080, "Test Neo Chat RU #1", "RU", "Main", 92, locked=True, favorite=True),
     Server("127.0.0.1", 8080, "localhost", "null", "Main", 10, locked=True, favorite=True),
 ]
 
@@ -95,5 +102,26 @@ def configStoregeServer(server: "Server") -> None: # сохраняет конф
                             "locked": server.locked}, 
                                 indent=2))
 
+# работа с активным сокетом
 
+def serverIsActiv() -> bool:
+    global _ClientSocket
+    return _ClientSocket._closed
+
+def serverGet() -> ClientSocket:
+    global _ClientSocket
+    return _ClientSocket
+
+def serverSet(client_socket: ClientSocket):
+    global _ClientSocket
+    try:
+        setScene("EntranceServer")
+    except NameError: ...
+    _ClientSocket = client_socket
+
+def serverClose() -> None:
+    global _ClientSocket
+    _ClientSocket.close()
+
+serverSet(ClientSocket())
 loadServer() # загружает конфигурацию при страте

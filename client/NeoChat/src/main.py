@@ -12,7 +12,7 @@ import os
 
 class Main:
     scens: list[ServerMenu, EntranceServer, RegistrationMenu, RecoveryMenu, CodeMenu] = []  # сценны
-    index = 5
+    index = 0
 
     def __init__(self, page: ft.Page):
         self.page = page
