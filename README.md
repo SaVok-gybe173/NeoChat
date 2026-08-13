@@ -45,7 +45,7 @@ client/
 |   |   ├── crypto/                 (шифрование)
 |   |   |   ├── __init__.py
 |   |   |   └── encrypted.py
-|   |   ├── network/                (вся сетевая инфроструктура)
+|   |   ├── network/                (вся сетевая инфраструктура)
 |   |   |   ├── __init__.py
 |   |   |   ├── api.py
 |   |   |   └── client_socket.py
