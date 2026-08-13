@@ -8,14 +8,37 @@
 Handlers::Handlers(IDatabase* db, ICrypto* hasher) : db_(db), hasher_(hasher) {}
 std::string Handlers::generateToken() {
     std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, 15);
     std::stringstream ss;
-    for(int i = 0; i < 32; i++) ss << std::hex << dis(gen);
+    ss << std::hex << std::setfill('0');
+    for(int i = 0; i < 4; i++) ss << std::setw(8) << rd();
     return ss.str();
 }
 std::string Handlers::hashPassword(const std::string& password, const std::string& salt) {
     return hasher_->hash(password + salt);
+}
+bool Handlers::validateUsername(const std::string& username, Json& outError) {
+    if(username.empty() || username.size() > 32) {
+        outError["status"] = "error";
+        outError["message"] = "Username must be 1-32 characters";
+        return false;
+    }
+    return true;
+}
+bool Handlers::validateContent(const std::string& content, Json& outError) {
+    if(content.empty() || content.size() > 4096) {
+        outError["status"] = "error";
+        outError["message"] = "Content must be 1-4096 characters";
+        return false;
+    }
+    return true;
+}
+bool Handlers::validatePublicKey(const std::string& key, Json& outError) {
+    if(key.empty() || key.size() > 256) {
+        outError["status"] = "error";
+        outError["message"] = "Public key too large (max 256 chars)";
+        return false;
+    }
+    return true;
 }
 void Handlers::userConnected(const std::string& username, std::shared_ptr<Session> session) {
     std::lock_guard<std::mutex> lock(activeUsersMutex_);
@@ -24,6 +47,7 @@ void Handlers::userConnected(const std::string& username, std::shared_ptr<Sessio
 void Handlers::userDisconnected(const std::string& username) {
     std::lock_guard<std::mutex> lock(activeUsersMutex_);
     activeUsers_.erase(username);
+    Logger::instance().info("User disconnected: " + username);
 }
 Json Handlers::handleRegister(const Json& req) {
     Json res;
@@ -34,9 +58,16 @@ Json Handlers::handleRegister(const Json& req) {
     }
     std::string username = req["username"].getString();
     std::string password = req["password"].getString();
-    if(username.empty() || password.empty()) {
+    if(!validateUsername(username, res)) return res;
+    if(!rateLimiter_.isAllowed(username)) {
+        Logger::instance().warn("Rate limit hit for register: " + username);
         res["status"] = "error";
-        res["message"] = "Empty username or password";
+        res["message"] = "Too many attempts. Try again in 5 minutes.";
+        return res;
+    }
+    if(password.empty() || password.size() > 128) {
+        res["status"] = "error";
+        res["message"] = "Password must be 1-128 characters";
         return res;
     }
     std::string salt = generateToken(); // 128-bit
@@ -45,9 +76,11 @@ Json Handlers::handleRegister(const Json& req) {
     user.passwordHash = hashPassword(password, salt);
     user.salt = salt;
     if(db_->addUser(user)) {
+        Logger::instance().info("User registered: " + username);
         res["status"] = "ok";
         res["message"] = "User registered";
     } else {
+        Logger::instance().warn("Registration failed (exists): " + username);
         res["status"] = "error";
         res["message"] = "Username already exists";
     }
@@ -62,14 +95,23 @@ Json Handlers::handleLogin(const Json& req, std::shared_ptr<Session> session) {
     }
     std::string username = req["username"].getString();
     std::string password = req["password"].getString();
+    if (!validateUsername(username, res)) return res;
+    if (!rateLimiter_.isAllowed(username)) {
+        Logger::instance().warn("Rate limit hit for login: " + username);
+        res["status"] = "error";
+        res["message"] = "Too many attempts. Try again in 5 minutes.";
+        return res;
+    }
     auto userOpt = db_->getUser(username);
     if(!userOpt) {
+        rateLimiter_.recordFailure(username);
         res["status"] = "error";
         res["message"] = "Invalid credentials";
         return res;
     }
     User user = *userOpt;
     if(hashPassword(password, user.salt) == user.passwordHash) {
+        rateLimiter_.recordSuccess(username);
         std::string token = generateToken();
         {
             std::lock_guard<std::mutex> lock(sessionMutex_);
@@ -79,10 +121,13 @@ Json Handlers::handleLogin(const Json& req, std::shared_ptr<Session> session) {
             session->setUsername(username);
             userConnected(username, session);
         }
+        Logger::instance().info("User logged in: " + username);
         res["status"] = "ok";
         res["token"] = token;
         res["username"] = username;
     } else {
+        rateLimiter_.recordFailure(username);
+        Logger::instance().warn("Failed login for user: " + username);
         res["status"] = "error";
         res["message"] = "Invalid credentials";
     }
@@ -102,13 +147,20 @@ Json Handlers::handleSendMessage(const Json& req) {
     {
         std::lock_guard<std::mutex> lock(sessionMutex_);
         auto it = authTokens_.find(token);
-        if(it == authTokens_.end()) {
+        if (it == authTokens_.end()) {
             res["status"] = "error";
             res["message"] = "Invalid token";
             return res;
         }
         from = it->second;
     }
+    if (!rateLimiter_.isAllowed(from)) {  // rate limit по username, не по token
+        res["status"] = "error";
+        res["message"] = "Rate limited";
+        return res;
+    }
+    if (!validateUsername(to, res)) return res;
+    if (!validateContent(content, res)) return res;
     if (!db_->getUser(to)) {
         res["status"] = "error";
         res["message"] = "Recipient not found";
@@ -123,31 +175,35 @@ Json Handlers::handleSendMessage(const Json& req) {
     msg.ephemeralKey = req.contains("ephemeral_key") ? req["ephemeral_key"].getString() : "";
     msg.nonce = req.contains("nonce") ? req["nonce"].getString() : "";
     msg.salt = req.contains("salt") ? req["salt"].getString() : "";
-    bool deliveredOnline = false;
+    std::shared_ptr<Session> targetSession;
     {
         std::lock_guard<std::mutex> lock(activeUsersMutex_);
         auto it = activeUsers_.find(to);
-        if(it != activeUsers_.end()) {
-            if(auto s = it->second.lock()) {
-                Json push;
-                push["type"] = "push";
-                push["action"] = "new_message";
-                push["from"] = from;
-                push["content"] = content;
-                push["timestamp"] = msg.timestamp;
-                push["encrypted"] = msg.encrypted;
-                push["ephemeral_key"] = msg.ephemeralKey;
-                push["nonce"] = msg.nonce;
-                push["salt"] = msg.salt;
-                if(s->deliver(push)) {
-                    deliveredOnline = true;
-                }
-            } else {
-                activeUsers_.erase(it);
+        if(it != activeUsers_.end()) { 
+            targetSession = it->second.lock();
+            if (!targetSession) {
+                activeUsers_.erase(it); // Сессия умерла
             }
         }
     }
+    bool deliveredOnline = false;
+    if(targetSession) {
+        Json push;
+        push["type"] = "push";
+        push["action"] = "new_message";
+        push["from"] = from;
+        push["content"] = content;
+        push["timestamp"] = msg.timestamp;
+        push["encrypted"] = msg.encrypted;
+        push["ephemeral_key"] = msg.ephemeralKey;
+        push["nonce"] = msg.nonce;
+        push["salt"] = msg.salt;
+        if(targetSession->deliver(push)) {
+            deliveredOnline = true;
+        }
+    }
     db_->addMessage(msg);
+    Logger::instance().info("Message from " + from + " to " + to + " (online=" + (deliveredOnline ? "yes" : "no") + ")");
     res["status"] = "ok";
     res["message"] = "Message sent";
     res["delivered_online"] = deliveredOnline;
@@ -173,6 +229,12 @@ Json Handlers::handleGetMessages(const Json& req) {
         }
         username = it->second;
     }
+    if (!rateLimiter_.isAllowed(username)) {
+        res["status"] = "error";
+        res["message"] = "Rate limited";
+        return res;
+    }
+    if (!validateUsername(peer, res)) return res;
     int limit = req.contains("limit") ? req["limit"].getInt() : 100;
     int offset = req.contains("offset") ? req["offset"].getInt() : 0;
     if(limit < 0) limit = 0;
@@ -204,13 +266,21 @@ Json Handlers::handleGetUsers(const Json& req) {
         return res;
     }
     std::string token = req["token"].getString();
+    std::string username;
     {
         std::lock_guard<std::mutex> lock(sessionMutex_);
-        if(authTokens_.find(token) == authTokens_.end()) {
-            res["status"] = "error";
-            res["message"] = "Invalid token";
-            return res;
+        auto it = authTokens_.find(token);
+        if(it == authTokens_.end()) { 
+            res["status"]="error"; 
+            res["message"]="Invalid token"; 
+            return res; 
         }
+        username = it->second;
+    }
+    if (!rateLimiter_.isAllowed(username)) {
+        res["status"] = "error";
+        res["message"] = "Rate limited";
+        return res;
     }
     auto users = db_->getAllUsers();
     Json arr;
@@ -239,6 +309,7 @@ Json Handlers::handleLogout(const Json& req, std::shared_ptr<Session> session) {
     if(!username.empty()) {
         userDisconnected(username);
     }
+    Logger::instance().info("User logged out: " + (username.empty() ? "unknown" : username));
     res["status"] = "ok";
     res["message"] = "Logged out";
     return res;
@@ -252,6 +323,7 @@ Json Handlers::handleUploadKey(const Json& req) {
     }
     std::string token = req["token"].getString();
     std::string keyData = req["key_data"].getString();
+    if (!validatePublicKey(keyData, res)) return res;
     std::string username;
     {
         std::lock_guard<std::mutex> lock(sessionMutex_);
@@ -263,7 +335,13 @@ Json Handlers::handleUploadKey(const Json& req) {
         }
         username = it->second;
     }
+    if (!rateLimiter_.isAllowed(username)) {
+        res["status"] = "error";
+        res["message"] = "Rate limited";
+        return res;
+    }
     if(db_->updateUserPublicKey(username,keyData)) {
+        Logger::instance().info("Public key uploaded for: " + username);
         res["status"] = "ok";
         res["message"] = "Public key uploaded";
     } else {
@@ -281,13 +359,21 @@ Json Handlers::handleGetKey(const Json& req) {
         return res;
     }
     std::string token = req["token"].getString();
+    std::string requester;
     {
         std::lock_guard<std::mutex> lock(sessionMutex_);
-        if(authTokens_.find(token) == authTokens_.end()) {
-            res["status"] = "error";
-            res["message"] = "Invalid token";
-            return res;
+        auto it = authTokens_.find(token);
+        if(it == authTokens_.end()) { 
+            res["status"]="error"; 
+            res["message"]="Invalid token"; 
+            return res; 
         }
+        requester = it->second;
+    }
+    if(!rateLimiter_.isAllowed(requester)) {
+        res["status"] = "error";
+        res["message"] = "Rate limited";
+        return res;
     }
     if(!req.contains("username")) {
         res["status"] = "error";
@@ -295,6 +381,7 @@ Json Handlers::handleGetKey(const Json& req) {
         return res;
     }
     std::string username = req["username"].getString();
+    if (!validateUsername(username, res)) return res;
     auto keyOpt = db_->getUserPublicKey(username);
     if(keyOpt) {
         res["status"] = "ok";
