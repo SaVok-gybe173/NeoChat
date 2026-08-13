@@ -22,6 +22,10 @@ server/
 |   |   ├── Sha256Hasher.hpp
 |   |   └── Sha256Hasher.cpp
 |   ├── utils/                (вспомогательные методы, функции, классы)
+|   |   ├── Logger.hpp        (логирование)
+|   |   ├── Logger.cpp
+|   |   ├── RateLimiter.hpp   (защита от брутфорса)
+|   |   ├── RateLimiter.cpp
 |   |   └── Json.hpp          (полноценная реализация парсера для JSON-файлов и для полноценного хранения данных)
 │   └── config/
 |       ├── Config.cpp        (реализация функций)
