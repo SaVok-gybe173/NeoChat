@@ -1,3 +1,5 @@
+#include "Session.hpp"
+#include "../platform.hpp"
 #include "network/Session.hpp"
 #include "routing/Router.hpp"
 #include "utils/Json.hpp"
