@@ -29,17 +29,17 @@ class Main:
         self.scens.append(RegistrationMenu(self.setScene))      # регестрация
         self.scens.append(RecoveryMenu(self.setScene))          # востановление пароля
         self.scens.append(CodeMenu(self.setScene))              # прием цифр из письма
-        self.scens.append(ChatMenu(self.setScene))              
+        self.scens.append(ChatMenu(self.setScene))              #
 
         self.scens[self.index](page)
 
         _setSceneLink(self.setScene)
 
     @classmethod
-    def setScene(cls, index):          # смена сценны
+    def setScene(cls, index):           # смена сценны
         if isinstance(index, str):
             index = [type(i).__name__ for i in cls.scens].index(index)
-        cls.index = index              # 
+        cls.index = index               # 
         getPage().clean()               # 
         
         cls.scens[index](getPage().page)    # запуск

@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List
+from PIL import ImageFont
 import flet as ft
 
 BG = "#0e1013"
@@ -14,6 +15,13 @@ ACCENT_DIM = "#2a3a5c"
 GROUP_COLOR = "#8f6bff"
 BUBBLE_USER = "#2a3550"
 BUBBLE_ASSIST = "#1b1f26"
+
+# Загружаем тот же шрифт, что использует приложение
+# (путь к .ttf/.otf — обычный шрифт системы или тот, что задан в Theme)
+_font = ImageFont.truetype("arial.ttf", size=14)  # подставьте свой размер/шрифт
+
+def measure_width(text: str) -> int:
+    return int(_font.getlength(text))
 
 @dataclass
 class Message:
@@ -76,16 +84,33 @@ class Text(Message):            # Текст
     type: str | None = "text"   # тип
     def draw(self, page):
         bubble_color = BUBBLE_USER if self.sender == "me" else BUBBLE_ASSIST
+
         body = ft.Markdown(
-                        self.text, selectable=True,
-                        extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
-                        code_theme="atom-one-dark",
-                    )
-        width = 300
-        return ft.Container(ft.Container(
-                        content=body, border=ft.Border.all(1, BORDER), bgcolor=bubble_color,
-                        border_radius=14, padding=ft.Padding.symmetric(horizontal=14, vertical=10)
-                    ), width=width if 8*len(self.text) >= width else 8*len(self.text)+30)
+            self.text.replace('\n', '  \n'),
+            selectable=True,
+            extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
+            code_theme="atom-one-dark",
+        )
+
+        max_width = 300
+        padding_extra = 30  # отступы контейнера
+
+        lines = self.text.split('\n')
+        longest_line = max(lines, key=len)
+        #content_width = 8 * len(longest_line) + 30
+        content_width = measure_width(longest_line) + padding_extra
+        width = min(content_width, max_width)
+
+        return ft.Container(
+            ft.Container(
+                content=body,
+                border=ft.Border.all(1, BORDER),
+                bgcolor=bubble_color,
+                border_radius=8,
+                padding=ft.Padding.symmetric(horizontal=14, vertical=10),
+            ),
+            width=width,
+        )
 
 @dataclass
 class File(Message):            # фаил
@@ -148,6 +173,6 @@ class Chat:
     is_group: bool = False                                                                          # чат это или же группа
     status: str = "в сети"                                                                          # текущий статус
     members: List[str] = field(default_factory=list)                                                # список учасников если группа
-    messages: List[Message | Caption | Text | Code | File] = field(default_factory=list)     # сообщния
-    unread: bool = False                                                                             # есть ли новое сообщение
+    messages: List[Message | Caption | Text | Code | File] = field(default_factory=list)            # сообщния
+    unread: bool = False                                                                            # есть ли новое сообщение
     render: ft.Container | None = None
