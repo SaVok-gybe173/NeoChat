@@ -1,5 +1,7 @@
 #pragma once
 #include "utils/Json.hpp"
+#include "utils/Logger.hpp"
+#include "utils/RateLimiter.hpp"
 #include "database/IDatabase.hpp"
 #include "crypto/ICrypto.hpp"
 #include <string>
@@ -26,10 +28,14 @@ public:
 private:
     std::string generateToken();
     std::string hashPassword(const std::string& password, const std::string& salt);
+    bool validateUsername(const std::string& username, Json& outError);
+    bool validateContent(const std::string& content, Json& outError);
+    bool validatePublicKey(const std::string& key, Json& outError);
     IDatabase* db_;
     ICrypto* hasher_;
     std::map<std::string, std::string> authTokens_;
     std::mutex sessionMutex_;
     std::unordered_map<std::string, std::weak_ptr<Session>> activeUsers_;
     std::mutex activeUsersMutex_;
+    RateLimiter rateLimiter_;
 };
