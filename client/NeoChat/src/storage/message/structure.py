@@ -41,7 +41,7 @@ ACCENT_DIM = "#2a3a5c"
 GROUP_COLOR = "#8f6bff"
 BUBBLE_USER = "#2a3550"
 BUBBLE_ASSIST = "#1b1f26"
- 
+
 # Загружаем шрифт из собственных ресурсов проекта.
 _font = ImageFont.truetype(get_flet_font_path(), size=14)
 

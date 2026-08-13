@@ -15,6 +15,8 @@ add_executable(messenger_server
     src/network/Session.cpp
     src/routing/Handlers.cpp
     src/routing/Router.cpp
+    src/Logger.cpp
+    src/RateLimiter.cpp
 )
 
 target_include_directories(messenger_server PRIVATE src)
