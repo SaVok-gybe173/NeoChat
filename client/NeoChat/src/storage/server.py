@@ -123,5 +123,15 @@ def serverClose() -> None:
     global _ClientSocket
     _ClientSocket.close()
 
+# происходит сейчас ли подключение
+def isConectGet() -> bool:
+    global _is_conect
+    return _is_conect
+
+def isConectSet(is_conect: bool) -> None:
+    global _is_conect
+    _is_conect = is_conect
+
+isConectSet(False)
 serverSet(ClientSocket())
 loadServer() # загружает конфигурацию при страте

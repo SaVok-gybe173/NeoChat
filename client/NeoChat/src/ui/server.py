@@ -1,7 +1,8 @@
-from storage.server import SERVERS, addServer, Server, updateServer, configStoregeServer, serverSet
+from storage.server import SERVERS, addServer, Server, updateServer, configStoregeServer, serverSet, isConectGet, isConectSet
 from language import LAN, getLan
 from typing import Callable
 
+import asyncio
 import flet as ft
 
 
@@ -35,22 +36,34 @@ class ServerMenu:
                 render_list()
             return handler
     
-        def connect(srv: Server): # подключение
-            coro = srv.conect()
-            
-            if coro:
-                serverSet(coro)
-                def handler(e):
-                    page.show_dialog(
-                        ft.SnackBar(ft.Text(f"{getLan("server", "connecting-to")} «{srv.name}»..."), bgcolor="#1d9e75")
-                    )
-            else:
-                def handler(e):
-                    page.show_dialog(
-                        ft.SnackBar(ft.Text(f"{getLan("server", "connecting-to")} «{srv.name}»..."), bgcolor="#c21010")
-                    )
+        async def connect(srv: Server): # подключение
+            if isConectGet():
+                page.show_dialog(
+                                ft.SnackBar(ft.Text(f"{getLan('server',"busy-connecting")}..."), bgcolor="#c21010")
+                            )
+                page.update()
+                return
 
-            return handler
+            isConectSet(True)
+
+            page.show_dialog(
+                ft.SnackBar(ft.Text(f"{getLan('server','connecting-to')} «{srv.name}»..."), bgcolor="#1d9e75")
+            )
+            page.update()
+
+            success = await asyncio.to_thread(srv.conect)
+
+            if success:
+                serverSet(success)
+            else:
+                page.show_dialog(
+                    ft.SnackBar(ft.Text(f"{getLan('server',"error-connecting-to")} «{srv.name}»..."), bgcolor="#c21010")
+                )
+                page.update()
+            isConectSet(False)
+                
+
+            
     
         def server_row(srv: Server):
             disabled = srv.status != "online"
@@ -106,7 +119,7 @@ class ServerMenu:
                                 ft.ElevatedButton(
                                     getLan("join"),
                                     disabled=disabled,
-                                    on_click= lambda e, s=srv: connect(s),
+                                    on_click= lambda e, s=srv: page.run_task(connect, s),
                                     bgcolor=ft.Colors.WHITE if not disabled else None,
                                     color=ft.Colors.BLACK if not disabled else None,
                                 ),
@@ -169,7 +182,8 @@ class ServerMenu:
             online = [s for s in state["servers"] if s.status == "online"]
             if online:
                 best = min(online, key=lambda s: s.ping)
-                page.show_dialog(ft.SnackBar(ft.Text(f"{getLan("server", "autoconnecting-to")} «{best.name}» ({best.ping} мс)"), bgcolor="#1d9e75"))
+                page.run_task(connect, best)
+                #page.show_dialog(ft.SnackBar(ft.Text(f"{getLan("server", "autoconnecting-to")} «{best.name}» ({best.ping} мс)"), bgcolor="#1d9e75"))
     
         def add_by_ip(e): # виджет поверх экрана для добаления сервера
             def close_dialog(ev): # закрытие

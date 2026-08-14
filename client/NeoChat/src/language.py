@@ -23,7 +23,9 @@ LAN: Dict[str, Dict[str, Dict[str, str] | str]] = {
             "ping": "Пинг",
             "online": "онлайн", "offline": "офлайн", "maintenance": "техработы",
             "connecting-to": "Подключаемся к",
-            "autoconnecting-to": "Подключаемся к",
+            #"autoconnecting-to": "Подключаемся к",
+            "error-connecting-to": "Ошибка подключения",
+            "busy-connecting": "Подключение занято",
             "ms": "мс",
             "Popularity": "Популярность",
             "Alphabet": "Алфавит",
@@ -62,11 +64,12 @@ LAN: Dict[str, Dict[str, Dict[str, str] | str]] = {
 
         },
         "EntranceServer": {
-            "login-email": "email",
-            "fill-login-password": "Заполните логин и пароль",
+            "login-email": "example@mail.com",
+            "login": "Email",
+            "fill-login-password": "Заполните email и пароль",
             "forgot-password": "Забыли пароль?",
             "account-login": "Вход в аккаунт",
-            "enter-login-password-continue": "Введите логин и пароль, чтобы продолжить",
+            "enter-login-password-continue": "Введите email и пароль, чтобы продолжить",
             "no-account": "Нет аккаунта?",
 
         },

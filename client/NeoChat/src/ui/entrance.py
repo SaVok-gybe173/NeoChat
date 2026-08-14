@@ -15,7 +15,7 @@ class EntranceServer:
 
     def __call__(self, page: ft.Page):
         login_field = ft.TextField(
-                label=getLan("RegistrationMenu", "login"),
+                label=getLan("EntranceServer", "login"),
                 hint_text=getLan("EntranceServer", "login-email"),
                 border_color=PANEL_BORDER,
                 focused_border_color=ACCENT,
