@@ -49,140 +49,47 @@ void Handlers::userDisconnected(const std::string& username) {
     activeUsers_.erase(username);
     Logger::instance().info("User disconnected: " + username);
 }
-
-Json Handlers::handleRegister(const Json& req) { // добавлены новы методы
+Json Handlers::handleRegister(const Json& req) {
     Json res;
-    if(!req.contains("username") || !req.contains("password") || !req.contains("email")) {
+    if(!req.contains("username") || !req.contains("password")) {
         res["status"] = "error";
-        res["reason"] = "missing_fields";
-        res["message"] = "Missing username, password or email";
+        res["message"] = "Empty username or password";
         return res;
     }
     std::string username = req["username"].getString();
     std::string password = req["password"].getString();
-    std::string email = req["email"].getString();
     if(!validateUsername(username, res)) return res;
     if(!rateLimiter_.isAllowed(username)) {
+        Logger::instance().warn("Rate limit hit for register: " + username);
         res["status"] = "error";
-        res["reason"] = "rate_limited";
         res["message"] = "Too many attempts. Try again in 5 minutes.";
         return res;
     }
     if(password.empty() || password.size() > 128) {
         res["status"] = "error";
-        res["reason"] = "invalid_password";
         res["message"] = "Password must be 1-128 characters";
         return res;
     }
-    if(db_->getUser(username)) {
-        res["status"] = "error";
-        res["reason"] = "username_taken";
-        res["message"] = "Username already exists";
-        return res;
-    }
-    if(db_->getUserByEmail(email)) {
-        res["status"] = "error";
-        res["reason"] = "email_taken";
-        res["message"] = "Account with this email already exists";
-        return res;
-    }
-
-    std::string salt = generateToken();
+    std::string salt = generateToken(); // 128-bit
     User user;
     user.username = username;
     user.passwordHash = hashPassword(password, salt);
     user.salt = salt;
-    user.email = email;
-    user.emailConfirmed = true; // почта не проверяется, аккаунт активен сразу
-    db_->addUser(user);
-    std::string code = generateToken().substr(0, 6);
-    //{
-    //    std::lock_guard<std::mutex> lock(codesMutex_);
-    //    pendingCodes_[email] = { code, std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 600 };
-    //}
-    //sendConfirmationEmail(email, code);
-    Logger::instance().info("User registered (pending confirmation): " + username);
-    res["status"] = "ok";
-    res["message"] = "confirmation_sent";
+    if(db_->addUser(user)) {
+        Logger::instance().info("User registered: " + username);
+        res["status"] = "ok";
+        res["message"] = "User registered";
+    } else {
+        Logger::instance().warn("Registration failed (exists): " + username);
+        res["status"] = "error";
+        res["message"] = "Username already exists";
+    }
     return res;
 }
-
-void Handlers::sendConfirmationEmail(const std::string& email, const std::string& code) {
-    // TODO: тут должна быть настоящая отправка письма (SMTP-библиотека)
-    Logger::instance().info("[STUB] Confirmation code for " + email + " = " + code);
-}
-
-Json Handlers::handleConfirmationRequest(const Json& req) {
-    Json res;
-    if(!req.contains("email")) {
-        res["status"] = "error";
-        res["reason"] = "missing_fields";
-        res["message"] = "Missing email";
-        return res;
-    }
-    std::string email = req["email"].getString();
-    auto userOpt = db_->getUserByEmail(email);
-    if(!userOpt) {
-        res["status"] = "error";
-        res["reason"] = "account_not_found";
-        res["message"] = "No account with this email";
-        return res;
-    }
-    std::string code = generateToken().substr(0, 6);
-    {
-        std::lock_guard<std::mutex> lock(codesMutex_);
-        pendingCodes_[email] = { code, std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 600 };
-    }
-    sendConfirmationEmail(email, code);
-    res["status"] = "ok";
-    res["message"] = "confirmation_sent";
-    return res;
-}
-
-Json Handlers::handleConfirmationCode(const Json& req) {
-    Json res;
-    if(!req.contains("email") || !req.contains("code")) {
-        res["status"] = "error";
-        res["reason"] = "missing_fields";
-        res["message"] = "Missing email or code";
-        return res;
-    }
-    std::string email = req["email"].getString();
-    std::string code = req["code"].getString();
-    long long now = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    std::lock_guard<std::mutex> lock(codesMutex_);
-    auto it = pendingCodes_.find(email);
-    if(it == pendingCodes_.end() || it->second.code != code) {
-        res["status"] = "error";
-        res["reason"] = "invalid_code";
-        res["message"] = "Confirmation code is incorrect";
-        return res;
-    }
-    if(now > it->second.expiresAt) {
-        pendingCodes_.erase(it);
-        res["status"] = "error";
-        res["reason"] = "code_expired";
-        res["message"] = "Confirmation code has expired";
-        return res;
-    }
-    auto userOpt = db_->getUserByEmail(email);
-    if(userOpt) {
-        db_->setEmailConfirmed(userOpt->username);
-        if(req.contains("device")) {
-            db_->setTrustedDevice(userOpt->username, req["device"]);
-        }
-    }
-    pendingCodes_.erase(it);
-    res["status"] = "ok";
-    res["message"] = "email_confirmed";
-    return res;
-}
-
 Json Handlers::handleLogin(const Json& req, std::shared_ptr<Session> session) {
     Json res;
     if(!req.contains("username") || !req.contains("password")) {
         res["status"] = "error";
-        res["reason"] = "missing_fields";
         res["message"] = "Missing username or password";
         return res;
     }
@@ -190,65 +97,42 @@ Json Handlers::handleLogin(const Json& req, std::shared_ptr<Session> session) {
     std::string password = req["password"].getString();
     if (!validateUsername(username, res)) return res;
     if (!rateLimiter_.isAllowed(username)) {
+        Logger::instance().warn("Rate limit hit for login: " + username);
         res["status"] = "error";
-        res["reason"] = "rate_limited";
         res["message"] = "Too many attempts. Try again in 5 minutes.";
         return res;
     }
     auto userOpt = db_->getUser(username);
-    if(!userOpt || hashPassword(password, userOpt->salt) != userOpt->passwordHash) {
+    if(!userOpt) {
         rateLimiter_.recordFailure(username);
         res["status"] = "error";
-        res["reason"] = "invalid_credentials";
-        res["message"] = "Invalid username or password";
+        res["message"] = "Invalid credentials";
         return res;
     }
-    if(!userOpt->emailConfirmed) {
-        res["status"] = "error";
-        res["reason"] = "email_not_confirmed";
-        res["message"] = "Please confirm your email first";
-        return res;
-    }
-    Json device = req.contains("device") ? req["device"] : Json();
-    bool deviceOk = true;
-    if(userOpt->trustedDevice.contains("device_id")) {
-        // уже есть доверенное устройство — сверяем
-        std::string trustedId = userOpt->trustedDevice["device_id"].getString();
-        std::string incomingId = device.contains("device_id") ? device["device_id"].getString() : "";
-        deviceOk = (!incomingId.empty() && incomingId == trustedId);
-    } else {
-        // первый вход — сохраняем текущее устройство как доверенное
-        db_->setTrustedDevice(username, device);
-    }
-    if(!deviceOk) {
-        std::string code = generateToken().substr(0, 6);
+    User user = *userOpt;
+    if(hashPassword(password, user.salt) == user.passwordHash) {
+        rateLimiter_.recordSuccess(username);
+        std::string token = generateToken();
         {
-            std::lock_guard<std::mutex> lock(codesMutex_);
-            pendingCodes_[userOpt->email] = { code, std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 600 };
+            std::lock_guard<std::mutex> lock(sessionMutex_);
+            authTokens_[token] = username;
         }
-        sendConfirmationEmail(userOpt->email, code);
+        if(session) {
+            session->setUsername(username);
+            userConnected(username, session);
+        }
+        Logger::instance().info("User logged in: " + username);
+        res["status"] = "ok";
+        res["token"] = token;
+        res["username"] = username;
+    } else {
+        rateLimiter_.recordFailure(username);
+        Logger::instance().warn("Failed login for user: " + username);
         res["status"] = "error";
-        res["reason"] = "device_not_verified";
-        res["message"] = "New device detected, email confirmation required";
-        return res;
+        res["message"] = "Invalid credentials";
     }
-    rateLimiter_.recordSuccess(username);
-    std::string token = generateToken();
-    {
-        std::lock_guard<std::mutex> lock(sessionMutex_);
-        authTokens_[token] = username;
-    }
-    if(session) {
-        session->setUsername(username);
-        userConnected(username, session);
-    }
-    Logger::instance().info("User logged in: " + username);
-    res["status"] = "ok";
-    res["token"] = token;
-    res["email"] = userOpt->email;
     return res;
 }
-
 Json Handlers::handleSendMessage(const Json& req) {
     Json res;
     if(!req.contains("token") || !req.contains("to") || !req.contains("content")) {

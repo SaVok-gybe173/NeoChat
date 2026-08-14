@@ -64,9 +64,9 @@ LAN: Dict[str, Dict[str, Dict[str, str] | str]] = {
 
         },
         "EntranceServer": {
-            "login-email": "",
-            "login": "Логин",
-            "fill-login-password": "Заполните логин и пароль",
+            "login-email": "example@mail.com",
+            "login": "Email",
+            "fill-login-password": "Заполните email и пароль",
             "forgot-password": "Забыли пароль?",
             "account-login": "Вход в аккаунт",
             "enter-login-password-continue": "Введите email и пароль, чтобы продолжить",
