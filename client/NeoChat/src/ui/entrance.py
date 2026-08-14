@@ -50,6 +50,7 @@ class EntranceServer:
             try:
                 serverEntrance(login_field.value, password_field.value)
                 error_text.visible = False
+                self.setScene("ChatMenu")
             except Exception as e:
                 print(e, type(e))
                 error_text.visible = True

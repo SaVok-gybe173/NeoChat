@@ -1,5 +1,6 @@
 from typing import Callable
 from language import LAN, getLan
+from network.client_api import serverRegistration
 import flet as ft
 
 ACCENT = "#5b8cff"
@@ -29,7 +30,7 @@ class RecoveryMenu:
     
         error_text = ft.Text("", color=DANGER, size=13, visible=False)
     
-        def on_send_click(e): # переход обратно на экран входа
+        def on_send_click(e):
             if not email_field.value:
                 error_text.value = getLan("RecoveryMenu", "enter-email")
                 error_text.visible = True
@@ -42,7 +43,7 @@ class RecoveryMenu:
                 error_text.visible = True
                 page.update()
                 return
-    
+            serverRegistration()
             error_text.visible = False
 
     

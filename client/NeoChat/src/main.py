@@ -29,7 +29,7 @@ class Main:
         self.scens.append(RegistrationMenu(self.setScene))      # регестрация
         self.scens.append(RecoveryMenu(self.setScene))          # востановление пароля
         self.scens.append(CodeMenu(self.setScene))              # прием цифр из письма
-        self.scens.append(ChatMenu(self.setScene))              #
+        self.scens.append(ChatMenu(self.setScene))              # чаты
 
         self.scens[self.index](page)
 

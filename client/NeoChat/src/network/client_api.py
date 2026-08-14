@@ -10,14 +10,16 @@ def serverRegistration(username: str, password: str, email: str) -> bool:       
     # {"action": "register", "username": "alice", "password": "secret123"}
     try:
         data = serverGet().send_request("register", username=username, password=password, email=email)
-    except ConnectionError:
+    except ConnectionError as e:
+        print(e)
         raise RegistrationError()
+    print(data)
     
-    # {"status": "error", "message": "Username already exists"}
+    # {'message': 'Invalid username or password', 'reason': 'invalid_credentials', 'req_id': '', 'status': 'error'}
     if data["status"] == "error":
-        if data["message"] == "Invalid credentials":    # так как ответ отличаеться то вместо reason будем использоваь message (потом помеяем)
+        if data['reason'] == 'invalid_credentials':    
             raise RegistrationUsernameError()       
-        elif data["message"] == "username_taken":       # на данный момент не активно
+        elif data['reason'] == "username_taken":
             raise RegistrationEmailError()
         else:
             raise RegistrationError()
@@ -31,15 +33,16 @@ def serverEntrance(username: str, password: str) -> bool:                     # 
         data = serverGet().send_request("login", username=username, password=password, device=get_device_fingerprint())
     except ConnectionError:
         raise EntranceError()
+    print(data)
     if data["status"] == "error":
-            if data["message"] == 'Invalid credentials':    # 
+            if data['reason'] == 'invalid_credentials':    
                 raise EntranceInvalidError()
-            elif data["message"] == "device_not_verified":  # на данный момент не активно
+            elif data['reason'] == "device_not_verified":
                 raise EntranceVerifiedError()
             else:
                 raise EntranceError()
     elif data["status"] == "ok":
-        setToken()
+        setToken(data['token'])
         return True
     else:
         return False

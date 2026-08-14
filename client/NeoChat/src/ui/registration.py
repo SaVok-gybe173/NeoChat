@@ -1,4 +1,5 @@
 from language import LAN, getLan
+from network.client_api import serverRegistration
 from typing import Callable
 
 import flet as ft
@@ -34,7 +35,12 @@ class RegistrationMenu:
                 error_text.visible = True
                 page.update()
                 return
-    
+            try:
+                if serverRegistration(username=login_field.value, password=password_field.value, email=email_field.value):
+                    self.setScene("EntranceServer")
+                    error_text.visible = False
+            except:
+                pass
             error_text.visible = False
 
         # Поля ввода

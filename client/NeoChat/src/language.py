@@ -178,9 +178,14 @@ def getLanguage() -> str:
 
 # функция которая пинимает путь к переводу и возвращает этот перевод
 def getLan(*names: tuple[str]) -> str | Dict[str, str]:
-    lan = LAN[getLanguage()]
-    for i in names:
-        lan = lan[i]
+    try:
+        lan = LAN[getLanguage()]
+        for i in names:
+            lan = lan[i]
+    except KeyError:    # используеться русский перевод если ошибка
+        lan = LAN['ru']
+        for i in names:
+            lan = lan[i]
     return lan
 
 # функция которая загружает язык из json
