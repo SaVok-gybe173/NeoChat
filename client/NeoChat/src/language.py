@@ -81,6 +81,14 @@ LAN: Dict[str, Dict[str, Dict[str, str] | str]] = {
             "send-code-again": "Отправить код повторно",
             "confirmation": "Подтверждение",
             "enter-6-digit-code-sent-emai": "Введите 6-значный код, отправленный на вашу почту"
+        },
+        "error":{
+            "RegistrationUsernameError": "Имя пользователя уже существует",
+            "RegistrationEmailError": "Учетная запись с этим адресом электронной почты уже существует",
+            "RegistrationError": "Неизвесня ошибка",
+            "EntranceInvalidError": "Неверное имя пользователя или пароль",
+            "EntranceVerifiedError": "Обнаружено новое устройство, требуется подтверждение по электронной почте",
+            "EntranceError": "Неизвесня ошибка",
         }
 
     },

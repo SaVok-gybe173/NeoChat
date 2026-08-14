@@ -21,7 +21,10 @@ class Server:
 
     def conect(self):
         soc = ClientSocket()
-        return soc.connect(self.ip, self.port)
+        is_ = soc.connect(self.ip, self.port)
+        if is_:
+            serverSet(soc)
+        return is_
         
         
         

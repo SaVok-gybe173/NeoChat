@@ -53,9 +53,7 @@ class ServerMenu:
 
             success = await asyncio.to_thread(srv.conect)
 
-            if success:
-                serverSet(success)
-            else:
+            if not success:
                 page.show_dialog(
                     ft.SnackBar(ft.Text(f"{getLan('server',"error-connecting-to")} «{srv.name}»..."), bgcolor="#c21010")
                 )

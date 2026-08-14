@@ -1,4 +1,5 @@
 from typing import Callable
+from network.client_api import serverEntrance
 from language import LAN, getLan
 import flet as ft
 
@@ -46,8 +47,13 @@ class EntranceServer:
                 error_text.visible = True
                 page.update()
                 return
-            error_text.visible = False
-            
+            try:
+                serverEntrance(login_field.value)
+                error_text.visible = False
+            except Exception as e:
+                error_text.visible = True
+                error_text.value = str(e)
+
     
         def on_forgot_click(e): # сброс пароля
             self.setScene("RecoveryMenu")

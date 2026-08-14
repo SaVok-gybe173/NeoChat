@@ -100,6 +100,16 @@ def loadChats():
     global _chats
     pass # дописать
 
+# токен клиента
+
+def setToken(tok: str) -> None:
+    global _token
+    _token = tok
+
+def getToken() -> str:
+    global _token
+    return _token
+
 # базовые значения
 setView("empty")
 setMyProfile(Chat(0, "null"))
