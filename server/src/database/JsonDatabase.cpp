@@ -106,6 +106,8 @@ bool JsonDatabase::addUser(const User& user) {
     obj["username"] = user.username;
     obj["passwordHash"] = user.passwordHash;
     obj["salt"] = user.salt;
+    obj["email"] = user.email;
+    obj["emailConfirmed"] = user.emailConfirmed;
     usersJson_["users"].push_back(obj);
     dirtyUsers_ = true;
     return true;
@@ -120,6 +122,9 @@ std::optional<User> JsonDatabase::getUser(const std::string& username) {
             res.passwordHash = u["passwordHash"].getString();
             res.salt = u["salt"].getString();
             if (u.contains("public_key")) res.publicKey = u["public_key"].getString();
+            if (u.contains("email")) res.email = u["email"].getString();
+            if (u.contains("emailConfirmed")) res.emailConfirmed = u["emailConfirmed"].getBool();
+            if (u.contains("trustedDevice")) res.trustedDevice = u["trustedDevice"];
             return res;
         }
     }
@@ -147,6 +152,46 @@ std::optional<std::string> JsonDatabase::getUserPublicKey(const std::string& use
         }
     }
     return std::nullopt;
+}
+
+std::optional<User> JsonDatabase::getUserByEmail(const std::string& email) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (const auto& u : usersJson_["users"].arrayValue) {
+        if (u.contains("email") && u["email"].getString() == email) {
+            User res;
+            res.username = u["username"].getString();
+            res.passwordHash = u["passwordHash"].getString();
+            res.salt = u["salt"].getString();
+            res.email = u["email"].getString();
+            res.emailConfirmed = u.contains("emailConfirmed") ? u["emailConfirmed"].getBool() : false;
+            return res;
+        }
+    }
+    return std::nullopt;
+}
+
+bool JsonDatabase::setEmailConfirmed(const std::string& username) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (auto& u : usersJson_["users"].arrayValue) {
+        if (u["username"].getString() == username) {
+            u["emailConfirmed"] = true;
+            dirtyUsers_ = true;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool JsonDatabase::setTrustedDevice(const std::string& username, const Json& device) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (auto& u : usersJson_["users"].arrayValue) {
+        if (u["username"].getString() == username) {
+            u["trustedDevice"] = device;
+            dirtyUsers_ = true;
+            return true;
+        }
+    }
+    return false;
 }
 
 long long JsonDatabase::addMessage(const Message& msg) {

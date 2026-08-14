@@ -2,12 +2,16 @@
 #include <string>
 #include <vector>
 #include <optional>
+#include "utils/Json.hpp"
 
 struct User {
     std::string username;
     std::string passwordHash;
     std::string salt;
-    std::string publicKey;
+    std::string publicKey;      
+    std::string email; 
+    bool emailConfirmed = false;
+    Json trustedDevice;         // пустой Json, если устройство ещё не сохранено
 };
 
 struct Message {
@@ -35,4 +39,8 @@ public:
     virtual long long addMessage(const Message& msg) = 0;
     virtual std::vector<Message> getMessages(const std::string& user1, const std::string& user2, int limit = 0, int offset = 0) = 0;
     virtual std::vector<std::string> getAllUsers() = 0;
+
+    virtual std::optional<User> getUserByEmail(const std::string& email) = 0;
+    virtual bool setEmailConfirmed(const std::string& username) = 0;
+    virtual bool setTrustedDevice(const std::string& username, const Json& device) = 0;
 };

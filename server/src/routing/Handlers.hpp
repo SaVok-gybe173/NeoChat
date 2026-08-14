@@ -17,6 +17,8 @@ public:
     Handlers(IDatabase* db, ICrypto* hasher);
     Json handleRegister(const Json& req);
     Json handleLogin(const Json& req, std::shared_ptr<Session> session);
+    Json handleConfirmationRequest(const Json& req);
+    Json handleConfirmationCode(const Json& req);
     Json handleSendMessage(const Json& req);
     Json handleGetMessages(const Json& req);
     Json handleGetUsers(const Json& req);
@@ -38,4 +40,9 @@ private:
     std::unordered_map<std::string, std::weak_ptr<Session>> activeUsers_;
     std::mutex activeUsersMutex_;
     RateLimiter rateLimiter_;
+
+    struct PendingCode { std::string code; long long expiresAt; };
+    std::unordered_map<std::string, PendingCode> pendingCodes_; // key = email
+    std::mutex codesMutex_;
+    void sendConfirmationEmail(const std::string& email, const std::string& code);
 };

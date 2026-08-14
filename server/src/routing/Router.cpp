@@ -13,6 +13,8 @@ Json Router::route(const Json& request, std::shared_ptr<Session> session) {
     }
     std::string action = request["action"].getString();
     if(action == "register") res = handlers_->handleRegister(request);
+    else if(action == "confirmation_request") res = handlers_->handleConfirmationRequest(request);
+    else if(action == "confirmation_code") res = handlers_->handleConfirmationCode(request);
     else if(action == "login") res = handlers_->handleLogin(request, session);
     else if(action == "send_message") res = handlers_->handleSendMessage(request);
     else if(action == "get_messages") res = handlers_->handleGetMessages(request);

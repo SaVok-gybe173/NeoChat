@@ -48,9 +48,10 @@ class EntranceServer:
                 page.update()
                 return
             try:
-                serverEntrance(login_field.value)
+                serverEntrance(login_field.value, password_field.value)
                 error_text.visible = False
             except Exception as e:
+                print(e, type(e))
                 error_text.visible = True
                 error_text.value = str(e)
 
