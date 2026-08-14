@@ -28,6 +28,7 @@ bool JsonDatabase::init() {
 }
 
 void JsonDatabase::flush() {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (dirtyUsers_.exchange(false)) {
         saveUsers();
     }
