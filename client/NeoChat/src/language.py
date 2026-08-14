@@ -55,24 +55,26 @@ LAN: Dict[str, Dict[str, Dict[str, str] | str]] = {
             "there-already-account": "Уже есть аккаунт?",
 
         },
+
         "RecoveryMenu": {
             "enter-email": "Введите email",
             "enter-valid-email": "Введите корректный email",
             "return-entrance": "Вернуться ко входу",
             "password-recovery": "Восстановление пароля",
             "enter-email-send-code-reset": "Введите email, и мы пришлём код для сброса"
-
         },
+
         "EntranceServer": {
-            "login-email": "example@mail.com",
-            "login": "Email",
-            "fill-login-password": "Заполните email и пароль",
+            "login-email": "",
+            "login": "Логин",
+            "fill-login-password": "Заполните логин и пароль",
             "forgot-password": "Забыли пароль?",
             "account-login": "Вход в аккаунт",
             "enter-login-password-continue": "Введите email и пароль, чтобы продолжить",
             "no-account": "Нет аккаунта?",
 
         },
+
         "CodMenu": {
             "code-from-letter": "Код из письма",
             "enter-6-digits": "Введите 6 цифр",
@@ -82,6 +84,7 @@ LAN: Dict[str, Dict[str, Dict[str, str] | str]] = {
             "confirmation": "Подтверждение",
             "enter-6-digit-code-sent-emai": "Введите 6-значный код, отправленный на вашу почту"
         },
+
         "error":{
             "RegistrationUsernameError": "Имя пользователя уже существует",
             "RegistrationEmailError": "Учетная запись с этим адресом электронной почты уже существует",

@@ -39,9 +39,10 @@ class RegistrationMenu:
                 if serverRegistration(username=login_field.value, password=password_field.value, email=email_field.value):
                     self.setScene("EntranceServer")
                     error_text.visible = False
-            except:
-                pass
-            error_text.visible = False
+            except Exception as e:
+                error_text.value = str(e)
+                error_text.visible = True
+            
 
         # Поля ввода
         login_field = ft.TextField(
