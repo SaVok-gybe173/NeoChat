@@ -17,9 +17,9 @@ def serverRegistration(username: str, password: str, email: str) -> bool:       
     
     # {'message': 'Invalid username or password', 'reason': 'invalid_credentials', 'req_id': '', 'status': 'error'}
     if data["status"] == "error":
-        if data['reason'] == 'invalid_credentials':    
+        if data.get('reason') == 'invalid_credentials':    
             raise RegistrationUsernameError()       
-        elif data['reason'] == "username_taken":
+        elif data.get('reason') == "username_taken":
             raise RegistrationEmailError()
         else:
             raise RegistrationError()
@@ -35,9 +35,9 @@ def serverEntrance(username: str, password: str) -> bool:                     # 
         raise EntranceError()
     print(data)
     if data["status"] == "error":
-            if data['reason'] == 'invalid_credentials':    
+            if data.get('reason') == 'invalid_credentials':    
                 raise EntranceInvalidError()
-            elif data['reason'] == "device_not_verified":
+            elif data.get('reason') == "device_not_verified":
                 raise EntranceVerifiedError()
             else:
                 raise EntranceError()
