@@ -1,4 +1,4 @@
-from config import NAME, CONFIG, _setSceneLink, getPage, _setPage
+from config import NAME, CONFIG, _setSceneLink, getPage, _setPage, THEME_MODS
 from ui.server import ServerMenu
 from ui.entrance import EntranceServer
 from ui.registration import RegistrationMenu
@@ -11,7 +11,7 @@ import sys
 import os
 
 class Main:
-    scens: list[ServerMenu, EntranceServer, RegistrationMenu, RecoveryMenu, CodeMenu] = []  # сценны
+    scens: list = []  # сценны
     index = 0
 
     def __init__(self, page: ft.Page):
@@ -20,7 +20,7 @@ class Main:
         page.title = NAME
         page.window.width = CONFIG.getint("WINDOW", "width")
         page.window.height = CONFIG.getint("WINDOW", "height")
-        page.theme_mode = "dark"
+        page.theme_mode = THEME_MODS[1]
         page.window.icon = "neochat-logo.png"
 
         # загрузка
@@ -37,10 +37,10 @@ class Main:
 
     @classmethod
     def setScene(cls, index):               # смена сценны
-        if isinstance(index, str):
+        if isinstance(index, str):          # поиск по имени
             index = [type(i).__name__ for i in cls.scens].index(index)
-        cls.index = index                   # 
-        getPage().clean()                   # 
+        cls.index = index                   # установка индекса
+        getPage().clean()                   # очистка экрана
         
         cls.scens[index](getPage().page)    # запуск
 

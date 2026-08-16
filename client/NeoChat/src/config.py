@@ -1,7 +1,7 @@
 # отладка
 DEBUGGING = True
 
-from .core.platform import is_android, is_ios
+from core.platform import is_android, is_ios
 import configparser
 import flet as ft
 import os
@@ -60,7 +60,7 @@ height = 700
 """)
 
 
-THEME_MODS = [ft.ThemeMode.LIGHT, ft.ThemeMode.DARK]
+THEME_MODS = [ft.ThemeMode.LIGHT, ft.ThemeMode.DARK, ft.ThemeMode.SYSTEM]
 
 CONFIG = configparser.ConfigParser()
 CONFIG.read(CONFIG_PATH)  # раньше тут было "config.ini" - неверный относительный путь
