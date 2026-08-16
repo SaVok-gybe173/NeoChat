@@ -1,3 +1,7 @@
+# отладка
+DEBUGGING = True
+
+from .core.platform import is_android, is_ios
 import configparser
 import flet as ft
 import os
@@ -27,10 +31,13 @@ NAME = "Neo Chat"
 # FLET_APP_STORAGE_DATA - директория, куда приложению разрешено писать
 # на Android/iOS/desktop. Локально (flet run) тоже работает и указывает
 # на <project>/.flet/storage/data. Фолбэк на "." на случай, если
-# переменная почему-то не установлена (например, запуск не через flet run).
-_APP_STORAGE = os.getenv("FLET_APP_STORAGE_DATA", ".")  # можно заменить на os.path.join(os.path.expanduser('~'), "NeoChat"), но на телефонах не будет работать
+if is_android() or is_ios() or DEBUGGING:
+    _APP_STORAGE = os.getenv("FLET_APP_STORAGE_DATA", ".")  # можно заменить на os.path.join(os.path.expanduser('~'), "NeoChat"), но на телефонах не будет работать
+else:
+    _APP_STORAGE = os.path.expanduser('~')
 
 HOME = os.path.join(_APP_STORAGE, "NeoChat")  # путь к корневой папке
+LOG_PATH = os.path.join(HOME, "logs") 
 CONFIG_PATH = os.path.join(HOME, "config.ini")
 LAN_PATH = os.path.join(HOME, "langes")  # путь к списку языков
 

@@ -36,11 +36,11 @@ class Main:
         _setSceneLink(self.setScene)
 
     @classmethod
-    def setScene(cls, index):           # смена сценны
+    def setScene(cls, index):               # смена сценны
         if isinstance(index, str):
             index = [type(i).__name__ for i in cls.scens].index(index)
-        cls.index = index               # 
-        getPage().clean()               # 
+        cls.index = index                   # 
+        getPage().clean()                   # 
         
         cls.scens[index](getPage().page)    # запуск
 

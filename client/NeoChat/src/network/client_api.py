@@ -13,7 +13,6 @@ def serverRegistration(username: str, password: str, email: str) -> bool:       
     except ConnectionError as e:
         print(e)
         raise RegistrationError()
-    print(data)
     
     # {'message': 'Invalid username or password', 'reason': 'invalid_credentials', 'req_id': '', 'status': 'error'}
     if data["status"] == "error":
@@ -33,7 +32,7 @@ def serverEntrance(username: str, password: str) -> bool:                     # 
         data = serverGet().send_request("login", username=username, password=password, device=get_device_fingerprint())
     except ConnectionError:
         raise EntranceError()
-    print(data)
+    
     if data["status"] == "error":
             if data.get('reason') == 'invalid_credentials':    
                 raise EntranceInvalidError()
