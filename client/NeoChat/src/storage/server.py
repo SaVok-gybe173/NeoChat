@@ -115,7 +115,7 @@ def serverGet() -> ClientSocket:
     global _ClientSocket
     return _ClientSocket
 
-def serverSet(client_socket: ClientSocket):
+def serverSet(client_socket: ClientSocket) -> None:
     global _ClientSocket
     try:
         setScene("EntranceServer")

@@ -25,3 +25,8 @@ class EntranceVerifiedError(Exception):
 class EntranceError(Exception):
     def __init__(self):
         super().__init__(getLan("error", "EntranceError"))
+
+# ошибка отправкии сообщений
+class SendMessageError(Exception):
+    def __init__(self):
+        super().__init__()

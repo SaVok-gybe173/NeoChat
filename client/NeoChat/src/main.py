@@ -1,4 +1,5 @@
 from config import NAME, CONFIG, _setSceneLink, getPage, _setPage, THEME_MODS
+from storage.logger import printLog
 from ui.server import ServerMenu
 from ui.entrance import EntranceServer
 from ui.registration import RegistrationMenu
@@ -23,6 +24,8 @@ class Main:
         page.theme_mode = THEME_MODS[1]
         page.window.icon = "neochat-logo.png"
 
+        printLog("start main")
+
         # загрузка
         self.scens.append(ServerMenu(self.setScene))            # меню для выбора сервера
         self.scens.append(EntranceServer(self.setScene))        # вход на сервер
@@ -37,6 +40,7 @@ class Main:
 
     @classmethod
     def setScene(cls, index):               # смена сценны
+        printLog("сценна сменилась >", index)               
         if isinstance(index, str):          # поиск по имени
             index = [type(i).__name__ for i in cls.scens].index(index)
         cls.index = index                   # установка индекса

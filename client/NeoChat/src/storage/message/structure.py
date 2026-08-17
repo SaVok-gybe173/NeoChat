@@ -198,6 +198,7 @@ class Code(Text):
 class Chat:
     id: str                                                                                         # id чата
     title: str                                                                                      # название
+    username: str                                                                                   # имя пользователя
     is_group: bool = False                                                                          # чат это или же группа
     status: str = "в сети"                                                                          # текущий статус
     members: List[str] = field(default_factory=list)                                                # список учасников если группа

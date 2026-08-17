@@ -72,7 +72,7 @@ def loadActiveChatId():
     pass # дописать
 
 # список чатов
-def delChat(chat: Chat):
+def delChat(chat: Chat) -> None:
     global _chats
     _chats.pop([i.id for i in _chats].index(chat.id))
 
@@ -87,6 +87,9 @@ def addChats(chat: Chat) -> None:
 def getChatId(id: int) -> Chat:
     global _chats
     return _chats[[i.id for i in _chats].index(id)]
+
+def getUsernameChatId(id: int) -> str:
+    return getChatId(id).username
 
 def getChats() -> list[Chat]:
     global _chats
