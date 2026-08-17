@@ -41,10 +41,9 @@ LOG_PATH = os.path.join(HOME, "logs")
 CONFIG_PATH = os.path.join(HOME, "config.ini")
 LAN_PATH = os.path.join(HOME, "langes")  # путь к списку языков
 
-if not os.path.isdir(HOME):
-    os.makedirs(HOME)
-if not os.path.isdir(LAN_PATH):
-    os.makedirs(LAN_PATH)
+if not os.path.isdir(HOME):         os.makedirs(HOME)
+if not os.path.isdir(LAN_PATH):     os.makedirs(LAN_PATH)
+if not os.path.isdir(LOG_PATH):     os.makedirs(LOG_PATH)
 if not os.path.isfile(CONFIG_PATH):
     with open(CONFIG_PATH, 'w', encoding="utf-8") as f:
         f.write("""

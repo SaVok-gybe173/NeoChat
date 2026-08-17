@@ -17,7 +17,7 @@ _file_log: str                      # путь к файлу
 _log_list_not_file: List[str] = []  # все логи который не удалось записать в фаил
 
 # устанавливает фаил лог
-def setFileLog(file: str) -> None:
+def setFileLog(file: str) -> bool:
     global _file_log
     global _is_open_file
     global _open_file
@@ -32,29 +32,31 @@ def setFileLog(file: str) -> None:
         _file_log = file
         try:
             _open_file = open(file, 'a', encoding="utf-8")
-            _is_open_file = False
+            _is_open_file = True
         except Exception as e:
             printLog('logger.py > setFileLog:', e, types = ERROR_LOGGER)
     else:
         _file_log = None
-        raise ValueError("нет файла")
+        return False
 
     updateLog()
+    return True
 
 # принимает название файла и создает его, или создает свой фаил
-def createFileLog(name: str | None = None) -> None:
+def createFileLog(name: str | None = None) -> bool:
     if name is None:
-        file = os.path.join(LOG_PATH, datetime.now().strftime("%Y-%m-%d_%H-%M.log"))
+        file = os.path.join(LOG_PATH, datetime.now().strftime("%Y-%m-%d %H-%M.log"))
+        
     else:
         file = os.path.join(LOG_PATH, name)
-        if not os.path.isfile(file):
-            try:
-                open(file, 'w', encoding="utf-8").close()
-            except Exception as e:
-                printLog('logger.py > createFileLog:', e, types = ERROR_LOGGER)
-    setFileLog(file)
+    if not os.path.isfile(file):
+        try:
+            open(file, 'w', encoding="utf-8").close()
+        except Exception as e:
+            printLog('logger.py > createFileLog:', e, types = ERROR_LOGGER)
+    return setFileLog(file)
 
-def _print(data):
+def _print(data: str) -> None:
     global _is_open_file
     global _open_file
     global _log_list_not_file
@@ -64,8 +66,9 @@ def _print(data):
             _open_file.write(data)
         except Exception as e:
             if DEBUGGING:
-                print(f"{ERROR_LOGGER} [{datetime.now().strftime("%Y-%m-%d %H-%M-%S")}] {e} > не удалось записать лог в фаил.".replace('\n', "<\\n>"))
+                print(f"{ERROR_LOGGER} [{datetime.now().strftime('%Y-%m-%d %H-%M-%S')}] {e} > не удалось записать лог в фаил.".replace('\n', "<\\n>"))
             _log_list_not_file.append(data)
+            _open_file.close()
             _is_open_file = False
     else:
         _log_list_not_file.append(data)
@@ -101,24 +104,36 @@ def updateLog() -> None:
     global _log_list_not_file
     global _open_file
 
-    _logs, _log_list_not_file = _log_list_not_file, []
-    
+    if not _is_open_file:       return
+    if not _log_list_not_file:  return
 
-    if _is_open_file:
-        for i in _logs:
-            if not _is_open_file:
-                del _log_list_not_file[-1]
-                _log_list_not_file.extend(_logs)
-                break
-            else:
-                printLog(i)
+    i = 0
+    while i < len(_log_list_not_file):
+        try:
+            _open_file.write(_log_list_not_file[i])
+            i += 1
+        except Exception:
+            # Ошибка записи. оставляем в списке только то, что не удалось
+            _log_list_not_file = _log_list_not_file[i:]
+            _is_open_file = False
+            return
+    _log_list_not_file.clear()
 
+# возвращает bool значение открыт ли фаил или же нет
 def isOpenLogFile() -> bool:
     global _is_open_file
     return _is_open_file
 
+# возвращает список логов
+def getLogList() -> list[str]:
+    global _is_open_file
+    global _open_file
+    global _log_list_not_file
 
-try:
-    createFileLog()
-except ValueError:
-    pass
+    if _is_open_file:
+        return []
+    else:
+        return _log_list_not_file
+
+
+createFileLog()
