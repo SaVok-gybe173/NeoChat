@@ -31,6 +31,7 @@ private:
     bool validateUsername(const std::string& username, Json& outError);
     bool validateContent(const std::string& content, Json& outError);
     bool validatePublicKey(const std::string& key, Json& outError);
+    bool validateEmail(const std::string& email, Json& outError);
     IDatabase* db_;
     ICrypto* hasher_;
     std::map<std::string, std::string> authTokens_;

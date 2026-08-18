@@ -106,6 +106,7 @@ bool JsonDatabase::addUser(const User& user) {
     obj["username"] = user.username;
     obj["passwordHash"] = user.passwordHash;
     obj["salt"] = user.salt;
+    obj["email"] = user.email;
     usersJson_["users"].push_back(obj);
     dirtyUsers_ = true;
     return true;
@@ -120,6 +121,23 @@ std::optional<User> JsonDatabase::getUser(const std::string& username) {
             res.passwordHash = u["passwordHash"].getString();
             res.salt = u["salt"].getString();
             if (u.contains("public_key")) res.publicKey = u["public_key"].getString();
+            if (u.contains("email")) res.email = u["email"].getString();
+            return res;
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<User> JsonDatabase::getUserByEmail(const std::string& email) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    for(const auto& u : usersJson_["users"].arrayValue) {
+        if(u.contains("email") && u["email"].getString() == email) {
+            User res;
+            res.username = u["username"].getString();
+            res.passwordHash = u["passwordHash"].getString();
+            res.salt = u["salt"].getString();
+            if (u.contains("public_key")) res.publicKey = u["public_key"].getString();
+            if (u.contains("email")) res.email = u["email"].getString();
             return res;
         }
     }

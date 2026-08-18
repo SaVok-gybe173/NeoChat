@@ -40,6 +40,35 @@ bool Handlers::validatePublicKey(const std::string& key, Json& outError) {
     }
     return true;
 }
+bool Handlers::validateEmail(const std::string& email, Json& outError) {
+    // Базовая проверка формата без внешних библиотек
+    if(email.empty() || email.size() > 254) {
+        outError["status"] = "error";
+        outError["message"] = "Email must be 1-254 characters";
+        return false;
+    }
+    size_t at = email.find('@');
+    // ровно один @, не в начале и не в конце
+    if(at == std::string::npos || at == 0 || at == email.size() - 1) {
+        outError["status"] = "error";
+        outError["message"] = "Invalid email format";
+        return false;
+    }
+    if(email.find('@', at + 1) != std::string::npos) {
+        outError["status"] = "error";
+        outError["message"] = "Invalid email format";
+        return false;
+    }
+    std::string domain = email.substr(at + 1);
+    // в домене должна быть точка, и он не должен начинаться/заканчиваться точкой
+    if(domain.find('.') == std::string::npos ||
+       domain.front() == '.' || domain.back() == '.') {
+        outError["status"] = "error";
+        outError["message"] = "Invalid email format";
+        return false;
+    }
+    return true;
+}
 void Handlers::userConnected(const std::string& username, std::shared_ptr<Session> session) {
     std::lock_guard<std::mutex> lock(activeUsersMutex_);
     activeUsers_[username] = session;
@@ -51,14 +80,16 @@ void Handlers::userDisconnected(const std::string& username) {
 }
 Json Handlers::handleRegister(const Json& req) {
     Json res;
-    if(!req.contains("username") || !req.contains("password")) {
+    if(!req.contains("username") || !req.contains("password") || !req.contains("email")) {
         res["status"] = "error";
-        res["message"] = "Empty username or password";
+        res["message"] = "Missing username, password or email";
         return res;
     }
     std::string username = req["username"].getString();
     std::string password = req["password"].getString();
+    std::string email = req["email"].getString();
     if(!validateUsername(username, res)) return res;
+    if(!validateEmail(email, res)) return res;
     if(!rateLimiter_.isAllowed(username)) {
         Logger::instance().warn("Rate limit hit for register: " + username);
         res["status"] = "error";
@@ -70,11 +101,19 @@ Json Handlers::handleRegister(const Json& req) {
         res["message"] = "Password must be 1-128 characters";
         return res;
     }
+    // Уникальность email
+    if(db_->getUserByEmail(email)) {
+        Logger::instance().warn("Registration failed (email exists): " + email);
+        res["status"] = "error";
+        res["message"] = "Email already registered";
+        return res;
+    }
     std::string salt = generateToken(); // 128-bit
     User user;
     user.username = username;
     user.passwordHash = hashPassword(password, salt);
     user.salt = salt;
+    user.email = email;
     if(db_->addUser(user)) {
         Logger::instance().info("User registered: " + username);
         res["status"] = "ok";

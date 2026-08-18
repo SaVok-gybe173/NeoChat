@@ -22,6 +22,7 @@ public:
     long long addMessage(const Message& msg) override;
     std::vector<Message> getMessages(const std::string& user1, const std::string& user2, int limit = 0, int offset = 0) override;
     std::vector<std::string> getAllUsers() override;
+    std::optional<User> getUserByEmail(const std::string& email) override;
 
 private:
     void loadUsers();
