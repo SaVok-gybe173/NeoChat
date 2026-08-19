@@ -14,8 +14,7 @@ def new_message(data: Dict[str, str]) -> None:
 
 PUSH_CALLABLE: Dict[str, Callable] = {"new_message": new_message}
 
-def serverRegistration(username: str, password: str, email: str) -> bool:           # выполняет регестрацию, 
-    # {"action": "register", "username": "alice", "password": "secret123"}
+def serverRegistration(username: str, password: str, email: str) -> bool:           # выполняет регестрацию
     printLog('регестрация >', username)
     try:
         data = serverGet().send_request("register", username=username, password=password, email=email)
@@ -23,15 +22,32 @@ def serverRegistration(username: str, password: str, email: str) -> bool:       
         printLog("client api >", e, types=ERROR)
         raise RegistrationError()
     
-    # {'message': 'Invalid username or password', 'reason': 'invalid_credentials', 'req_id': '', 'status': 'error'}
-    if data["status"] == "error":
-        if data.get('reason') == 'invalid_credentials':    
-            raise RegistrationUsernameError()       
-        elif data.get('reason') == "username_taken":
-            raise RegistrationEmailError()
+    if data.get("status") == "error":
+        if 'reason' in data: # есть ли reason в версии сервера
+            if data.get('reason') == 'invalid_credentials':    
+                raise RegistrationUsernameError()       
+            elif data.get('reason') == "username_taken":
+                raise RegistrationEmailError()
+            else:
+                raise RegistrationError()
+        elif "message" in data:
+            match data["message"]:
+                case "Missing username, password or email":
+                    raise RegistrationError()
+                case ["Username must be 1-32 characters", "Username already exists"]:
+                    raise RegistrationUsernameError()
+                case ["Email must be 1-254 characters", "Invalid email format", "Email already registered"]:
+                    raise RegistrationEmailError()
+                case "Too many attempts. Try again in 5 minutes.": # лимиты запросов
+                    raise RegistrationError()
+                case "Password must be 1-128 characters": # не верный пароль
+                    raise RegistrationError()
+                case _:
+                    raise RegistrationError()
         else:
-            raise RegistrationError()
-    elif data["status"] == "ok":
+                raise RegistrationError()
+        
+    elif data.get("status") == "ok":
         return True
     else:
         return False
@@ -44,14 +60,29 @@ def serverEntrance(username: str, password: str) -> bool:                     # 
         printLog("client api >", e, types=ERROR)
         raise EntranceError()
     
-    if data["status"] == "error":
+    if data.get("status") == "error":
+        if 'reason' in data:
             if data.get('reason') == 'invalid_credentials':    
                 raise EntranceInvalidError()
             elif data.get('reason') == "device_not_verified":
                 raise EntranceVerifiedError()
             else:
                 raise EntranceError()
-    elif data["status"] == "ok":
+        elif "message" in data:
+            match data["message"]:
+                case "Missing username or password":
+                    raise EntranceError()
+                case "Username must be 1-32 characters":
+                    raise EntranceInvalidError()
+                case "Too many attempts. Try again in 5 minutes.": # Превышен лимит попыток
+                    raise EntranceError()
+                case "Invalid credentials":
+                    raise EntranceVerifiedError()
+                case _:
+                    raise EntranceError()
+        else:
+            raise EntranceError()
+    elif data.get("status") == "ok":
         setToken(data['token'])
         setPush()
         return True
@@ -60,7 +91,6 @@ def serverEntrance(username: str, password: str) -> bool:                     # 
 
 # отправка сообщения
 def serverSendMessage(mess: str) -> None:
-
     id = getActiveChatId()
     if id is None: raise SendMessageError()
 

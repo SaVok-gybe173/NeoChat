@@ -3,14 +3,17 @@ from language import getLan
 # ошибки регестрации
 class RegistrationUsernameError(Exception):
     def __init__(self):
+        # заянят юзернейм
         super().__init__(getLan("error", "RegistrationUsernameError"))
 
 class RegistrationEmailError(Exception):
     def __init__(self):
+        # занята почта
         super().__init__(getLan("error", "RegistrationEmailError"))
 
 class RegistrationError(Exception):
     def __init__(self):
+        # просто неизвесная ошибка
         super().__init__(getLan("error", "RegistrationError"))
 
 # ошибки входа
