@@ -194,8 +194,9 @@ class Code(Text):
             border_radius=10, padding=8,
         )
 
+type T = Message | Caption | Text | Code | File                                                     # все типы
 @dataclass
-class Chat[T]:
+class Chat:
     id: str                                                                                         # id чата
     title: str                                                                                      # название
     username: str                                                                                   # имя пользователя
