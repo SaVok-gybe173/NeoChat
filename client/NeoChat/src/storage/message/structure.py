@@ -175,7 +175,7 @@ class File(Message):            # фаил
             border_radius=14, padding=10,
         )
     
-    def download_file():    # установка файла
+    def download_file():        # установка файла
         pass
 
 @dataclass
@@ -195,13 +195,25 @@ class Code(Text):
         )
 
 @dataclass
-class Chat:
+class Chat[T]:
     id: str                                                                                         # id чата
     title: str                                                                                      # название
     username: str                                                                                   # имя пользователя
     is_group: bool = False                                                                          # чат это или же группа
     status: str = "в сети"                                                                          # текущий статус
     members: List[str] = field(default_factory=list)                                                # список учасников если группа
-    messages: List[Message | Caption | Text | Code | File] = field(default_factory=list)            # сообщния
+    messages: List[T] = field(default_factory=list)                                                 # сообщния
     unread: bool = False                                                                            # есть ли новое сообщение
     render: ft.Container | None = None
+
+    def appendMess(self, item: T) -> None:
+        self.messages.append(item)
+
+    def popMess(self, inedex: int = -1) -> T | None:
+        return self.messages.pop(inedex) if self.messages else None
+
+    def indexMess(self, item: T) -> int | None:
+        return self.messages.index(item) if self.messages else None
+
+    def peekMess(self, index: int) -> T | None:
+        return self.messages[index] if self.messages else None

@@ -3,7 +3,7 @@ from storage.message.bd import setToken, getToken, getActiveChatId, getUsernameC
 from storage.logger import printLog, ERROR
 from config import setScene
 from core.fingerprint import get_device_fingerprint
-from typing import Callable, Dict
+from typing import Callable, Dict, Any
 from .error import (RegistrationEmailError, RegistrationUsernameError, RegistrationError,
                     EntranceInvalidError, EntranceVerifiedError, EntranceError,
                     SendMessageError
@@ -123,7 +123,8 @@ def updateListChats() -> bool:
                               i, i))
 
 # обновление сообщений
-def updatePush(msg: dict[str, object]):
+type Data = Any
+def updatePush(msg: Dict[str, Data]):
     try:
         PUSH_CALLABLE[msg["action"]](msg)
     except KeyError as e:
@@ -132,14 +133,14 @@ def updatePush(msg: dict[str, object]):
         printLog(f"updatePush > {msg["action"]} >", e, types=ERROR)
 
 # устанавливает пуш функциию
-def setPush(fun: Callable | None = None) -> None:
+def setPush(fun: Callable[[Dict[str, Data]], None] | None = None) -> None:
     if fun is None:
         serverGet().on_push(updatePush)
     else:
         serverGet().on_push(fun)
 
 # удаляет все функции
-def delPush(fun: Callable | None = None) -> bool:
+def delPush(fun: Callable[[Dict[str, Data]], None] | None = None) -> bool:
     if fun is None:
         for i, f in enumerate(serverGet().push_callbacks):
             if f is fun:
