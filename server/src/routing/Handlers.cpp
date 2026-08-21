@@ -82,22 +82,31 @@ Json Handlers::handleRegister(const Json& req) {
     Json res;
     if(!req.contains("username") || !req.contains("password") || !req.contains("email")) {
         res["status"] = "error";
+        res["reason"] = "missing_fields";
         res["message"] = "Missing username, password or email";
         return res;
     }
     std::string username = req["username"].getString();
     std::string password = req["password"].getString();
     std::string email = req["email"].getString();
-    if(!validateUsername(username, res)) return res;
-    if(!validateEmail(email, res)) return res;
+    if(!validateUsername(username, res)) {
+        res["reason"] = "invalid_username";
+        return res;
+    }
+    if(!validateEmail(email, res)) {
+        res["reason"] = "invalid_email";
+        return res; 
+    }
     if(!rateLimiter_.isAllowed(username)) {
         Logger::instance().warn("Rate limit hit for register: " + username);
         res["status"] = "error";
+        res["reason"] = "rate_limited";
         res["message"] = "Too many attempts. Try again in 5 minutes.";
         return res;
     }
     if(password.empty() || password.size() > 128) {
         res["status"] = "error";
+        res["reason"] = "invalid_password";
         res["message"] = "Password must be 1-128 characters";
         return res;
     }
@@ -105,6 +114,7 @@ Json Handlers::handleRegister(const Json& req) {
     if(db_->getUserByEmail(email)) {
         Logger::instance().warn("Registration failed (email exists): " + email);
         res["status"] = "error";
+        res["reason"] = "email_taken";
         res["message"] = "Email already registered";
         return res;
     }
@@ -121,6 +131,7 @@ Json Handlers::handleRegister(const Json& req) {
     } else {
         Logger::instance().warn("Registration failed (exists): " + username);
         res["status"] = "error";
+        res["reason"] = "username_taken";
         res["message"] = "Username already exists";
     }
     return res;
@@ -129,15 +140,20 @@ Json Handlers::handleLogin(const Json& req, std::shared_ptr<Session> session) {
     Json res;
     if(!req.contains("username") || !req.contains("password")) {
         res["status"] = "error";
+        res["reason"] = "missing_fields";
         res["message"] = "Missing username or password";
         return res;
     }
     std::string username = req["username"].getString();
     std::string password = req["password"].getString();
-    if (!validateUsername(username, res)) return res;
+    if (!validateUsername(username, res)) {
+        res["reason"] = "invalid_username";
+        return res;
+    }
     if (!rateLimiter_.isAllowed(username)) {
         Logger::instance().warn("Rate limit hit for login: " + username);
         res["status"] = "error";
+        res["reason"] = "rate_limited";
         res["message"] = "Too many attempts. Try again in 5 minutes.";
         return res;
     }
@@ -145,6 +161,7 @@ Json Handlers::handleLogin(const Json& req, std::shared_ptr<Session> session) {
     if(!userOpt) {
         rateLimiter_.recordFailure(username);
         res["status"] = "error";
+        res["reason"] = "invalid_credentials";
         res["message"] = "Invalid credentials";
         return res;
     }
@@ -168,6 +185,7 @@ Json Handlers::handleLogin(const Json& req, std::shared_ptr<Session> session) {
         rateLimiter_.recordFailure(username);
         Logger::instance().warn("Failed login for user: " + username);
         res["status"] = "error";
+        res["reason"] = "invalid_credentials";
         res["message"] = "Invalid credentials";
     }
     return res;
@@ -176,6 +194,7 @@ Json Handlers::handleSendMessage(const Json& req) {
     Json res;
     if(!req.contains("token") || !req.contains("to") || !req.contains("content")) {
         res["status"] = "error";
+        res["reason"] = "missing_fields";
         res["message"] = "Missing fields";
         return res;
     }
@@ -188,6 +207,7 @@ Json Handlers::handleSendMessage(const Json& req) {
         auto it = authTokens_.find(token);
         if (it == authTokens_.end()) {
             res["status"] = "error";
+            res["reason"] = "invalid_token";
             res["message"] = "Invalid token";
             return res;
         }
@@ -195,13 +215,21 @@ Json Handlers::handleSendMessage(const Json& req) {
     }
     if (!rateLimiter_.isAllowed(from)) {  // rate limit по username, не по token
         res["status"] = "error";
+        res["reason"] = "rate_limited";
         res["message"] = "Rate limited";
         return res;
     }
-    if (!validateUsername(to, res)) return res;
-    if (!validateContent(content, res)) return res;
+    if (!validateUsername(to, res)) {
+        res["reason"] = "invalid_username";
+        return res;
+    }
+    if (!validateContent(content, res)) {
+        res["reason"] = "invalid_content";
+        return res;
+    }
     if (!db_->getUser(to)) {
         res["status"] = "error";
+        res["reason"] = "user_not_found";
         res["message"] = "Recipient not found";
         return res;
     }
@@ -252,6 +280,7 @@ Json Handlers::handleGetMessages(const Json& req) {
     Json res;
     if(!req.contains("token") || !req.contains("peer")) {
         res["status"] = "error";
+        res["reason"] = "missing_fields";
         res["message"] = "Missing fields";
         return res;
     }
@@ -263,6 +292,7 @@ Json Handlers::handleGetMessages(const Json& req) {
         auto it = authTokens_.find(token);
         if(it == authTokens_.end()) {
             res["status"] = "error";
+            res["reason"] = "invalid_token";
             res["message"] = "Invalid token";
             return res;
         }
@@ -270,10 +300,14 @@ Json Handlers::handleGetMessages(const Json& req) {
     }
     if (!rateLimiter_.isAllowed(username)) {
         res["status"] = "error";
+        res["reason"] = "rate_limited";
         res["message"] = "Rate limited";
         return res;
     }
-    if (!validateUsername(peer, res)) return res;
+    if (!validateUsername(peer, res)) {
+        res["reason"] = "invalid_username";
+        return res;
+    }
     int limit = req.contains("limit") ? req["limit"].getInt() : 100;
     int offset = req.contains("offset") ? req["offset"].getInt() : 0;
     if(limit < 0) limit = 0;
@@ -301,6 +335,7 @@ Json Handlers::handleGetUsers(const Json& req) {
     Json res;
     if(!req.contains("token")) {
         res["status"] = "error";
+        res["reason"] = "missing_fields";
         res["message"] = "Missing token";
         return res;
     }
@@ -310,7 +345,8 @@ Json Handlers::handleGetUsers(const Json& req) {
         std::lock_guard<std::mutex> lock(sessionMutex_);
         auto it = authTokens_.find(token);
         if(it == authTokens_.end()) { 
-            res["status"]="error"; 
+            res["status"]="error";
+            res["reason"] = "invalid_token";
             res["message"]="Invalid token"; 
             return res; 
         }
@@ -318,6 +354,7 @@ Json Handlers::handleGetUsers(const Json& req) {
     }
     if (!rateLimiter_.isAllowed(username)) {
         res["status"] = "error";
+        res["reason"] = "rate_limited";
         res["message"] = "Rate limited";
         return res;
     }
@@ -332,6 +369,7 @@ Json Handlers::handleLogout(const Json& req, std::shared_ptr<Session> session) {
     Json res;
     if(!req.contains("token")) {
         res["status"] = "error";
+        res["reason"] = "missing_fields";
         res["message"] = "Missing token";
         return res;
     }
@@ -357,18 +395,23 @@ Json Handlers::handleUploadKey(const Json& req) {
     Json res;
     if(!req.contains("token") || !req.contains("key_data")) {
         res["status"] = "error";
+        res["reason"] = "missing_fields";
         res["message"] = "Missing token or key_data";
         return res;
     }
     std::string token = req["token"].getString();
     std::string keyData = req["key_data"].getString();
-    if (!validatePublicKey(keyData, res)) return res;
+    if (!validatePublicKey(keyData, res)) {
+        res["reason"] = "invalid_key";
+        return res;
+    }
     std::string username;
     {
         std::lock_guard<std::mutex> lock(sessionMutex_);
         auto it = authTokens_.find(token);
         if(it == authTokens_.end()) {
             res["status"] = "error";
+            res["reason"] = "invalid_token";
             res["message"] = "Invalid token";
             return res;
         }
@@ -376,6 +419,7 @@ Json Handlers::handleUploadKey(const Json& req) {
     }
     if (!rateLimiter_.isAllowed(username)) {
         res["status"] = "error";
+        res["reason"] = "rate_limited";
         res["message"] = "Rate limited";
         return res;
     }
@@ -385,6 +429,7 @@ Json Handlers::handleUploadKey(const Json& req) {
         res["message"] = "Public key uploaded";
     } else {
         res["status"] = "error";
+        res["reason"] = "user_not_found";
         res["message"] = "User not found";
     }
     return res;
@@ -394,6 +439,7 @@ Json Handlers::handleGetKey(const Json& req) {
     // Требуем token, чтобы исключить перебор username
     if(!req.contains("token")) {
         res["status"] = "error";
+        res["reason"] = "missing_fields";
         res["message"] = "Missing token";
         return res;
     }
@@ -403,7 +449,8 @@ Json Handlers::handleGetKey(const Json& req) {
         std::lock_guard<std::mutex> lock(sessionMutex_);
         auto it = authTokens_.find(token);
         if(it == authTokens_.end()) { 
-            res["status"]="error"; 
+            res["status"]="error";
+            res["reason"] = "invalid_token";
             res["message"]="Invalid token"; 
             return res; 
         }
@@ -411,22 +458,28 @@ Json Handlers::handleGetKey(const Json& req) {
     }
     if(!rateLimiter_.isAllowed(requester)) {
         res["status"] = "error";
+        res["reason"] = "rate_limited";
         res["message"] = "Rate limited";
         return res;
     }
     if(!req.contains("username")) {
         res["status"] = "error";
+        res["reason"] = "missing_fields";
         res["message"] = "Missing username";
         return res;
     }
     std::string username = req["username"].getString();
-    if (!validateUsername(username, res)) return res;
+    if (!validateUsername(username, res)) {
+        res["reason"] = "invalid_username";
+        return res;
+    }
     auto keyOpt = db_->getUserPublicKey(username);
     if(keyOpt) {
         res["status"] = "ok";
         res["key_data"] = *keyOpt;
     } else {
         res["status"] = "error";
+        res["reason"] = "key_not_found";
         res["message"] = "Public key not found";
     }
     return res;
