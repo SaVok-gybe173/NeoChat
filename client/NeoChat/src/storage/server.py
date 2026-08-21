@@ -23,7 +23,7 @@ class Server:
         soc = ClientSocket()
         is_ = soc.connect(self.ip, self.port)
         if is_:
-            serverSet(soc)
+            serverSet(soc, self)
         return is_
         
         
@@ -34,11 +34,13 @@ SERVERS: list[Server] = [
     Server("127.0.0.1", 8080, "localhost", "null", "Main", 10, locked=True, favorite=True),
 ]
 
-if not os.path.isdir(os.path.join(HOME, "storage")):    # проверка а наличии папки storage
-    os.mkdir(os.path.join(HOME, "storage"))             # созадние папки storage
+STORAGE = os.path.join(HOME, "storage")
+
+if not os.path.isdir(STORAGE):    # проверка а наличии папки storage
+    os.mkdir(STORAGE)             # созадние папки storage
 
 def getListStorege() -> list[str]: # возвращает список из путей в storage
-    return [os.path.join(HOME, "storage", i) for i in os.listdir(os.path.join(HOME, "storage"))]
+    return [os.path.join(STORAGE, i) for i in os.listdir(STORAGE)]
 
 def addServer(ip: str, port: str) -> None:  # добавляет сервер
     port = int(port)
@@ -89,7 +91,7 @@ def loadServer() -> None:       # загружает список серверо
             SERVERS.append(data)
 
 def configStoregeServer(server: "Server") -> None: # сохраняет конфигурацию сервера
-    path = os.path.join(HOME, "storage", f"{server.ip}-{server.port}") # структура 127.0.0.1-8080 
+    path = os.path.join(STORAGE, f"{server.ip}-{server.port}") # структура 127.0.0.1-8080 
     if not os.path.isdir(path):
         os.mkdir(path)
 
@@ -106,7 +108,8 @@ def configStoregeServer(server: "Server") -> None: # сохраняет конф
                                 indent=2))
 
 # работа с активным сокетом
-
+_ClientSocket: ClientSocket
+_server_info: Server
 def serverIsActiv() -> bool:
     global _ClientSocket
     return _ClientSocket._closed
@@ -115,16 +118,21 @@ def serverGet() -> ClientSocket:
     global _ClientSocket
     return _ClientSocket
 
-def serverSet(client_socket: ClientSocket) -> None:
-    global _ClientSocket
+def serverSet(client_socket: ClientSocket, server_info: Server) -> None:
+    global _ClientSocket, _server_info
     try:
         setScene("EntranceServer")
     except NameError: ...
+    _server_info = server_info
     _ClientSocket = client_socket
 
 def serverClose() -> None:
     global _ClientSocket
     _ClientSocket.close()
+
+def serverInfoGet() -> Server:
+    global _server_info
+    return _server_info
 
 # происходит сейчас ли подключение
 def isConectGet() -> bool:
@@ -136,5 +144,5 @@ def isConectSet(is_conect: bool) -> None:
     _is_conect = is_conect
 
 isConectSet(False)
-serverSet(ClientSocket())
+serverSet(ClientSocket(), Server("127.0.0.1", 0, "null", "null", "null"))
 loadServer() # загружает конфигурацию при страте
