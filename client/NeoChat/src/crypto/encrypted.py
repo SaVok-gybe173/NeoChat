@@ -14,6 +14,37 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
+
+def encrypt_message(data: bytes, key: bytes) -> bytes:
+    """
+    Шифрует байтовую строку с использованием AES-256-GCM.
+    Возвращает: nonce (12 байт) + тег (16 байт) + зашифрованные данные.
+    """
+    if len(key) not in (16, 24, 32):
+        raise ValueError("Ключ должен быть длиной 16, 24 или 32 байта (AES-128/192/256)")
+    # Генерируем случайный nonce (12 байт — рекомендуется для GCM)
+    nonce = os.urandom(12)
+    cipher = Cipher(algorithms.AES(key), modes.GCM(nonce), backend=default_backend())
+    encryptor = cipher.encryptor()
+    ciphertext = encryptor.update(data) + encryptor.finalize()
+    # Возвращаем nonce + тег + шифротекст
+    return nonce + encryptor.tag + ciphertext
+
+def decrypt_message(encrypted_data: bytes, key: bytes) -> bytes:
+    """
+    Дешифрует данные, полученные из encrypt_message.
+    """
+    if len(key) not in (16, 24, 32):
+        raise ValueError("Ключ должен быть длиной 16, 24 или 32 байта")
+    nonce = encrypted_data[:12]
+    tag = encrypted_data[12:28]
+    ciphertext = encrypted_data[28:]
+    cipher = Cipher(algorithms.AES(key), modes.GCM(nonce, tag), backend=default_backend())
+    decryptor = cipher.decryptor()
+    decrypted = decryptor.update(ciphertext) + decryptor.finalize()
+    return decrypted
 
 class KeyManager:
     """Управление статической ключевой парой X25519 клиента."""
