@@ -3,6 +3,7 @@ End-to-End Encryption: X25519 ephemeral-static ECDH + HKDF-SHA256 + AES-256-GCM.
 Каждое сообщение — уникальный ephemeral ключ (Forward Secrecy).
 """
 
+import secrets
 import base64
 import os
 from typing import Tuple
@@ -16,6 +17,24 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
+
+def generate_key(length: int = 32) -> bytes:
+    """
+    Генерирует случайный ключ заданной длины для AES.
+    
+    Аргументы:
+        length (int): длина ключа в байтах (16, 24 или 32). По умолчанию 32 (AES-256).
+
+    Возвращает:
+        bytes: случайный ключ указанной длины.
+
+    Исключения:
+        ValueError: если длина не равна 16, 24 или 32.
+    """
+    if length not in (16, 24, 32):
+        raise ValueError("Длина ключа должна быть 16, 24 или 32 байта")
+    # Используем secrets.token_bytes для максимальной безопасности (или os.urandom)
+    return secrets.token_bytes(length)
 
 def encrypt_message(data: bytes, key: bytes) -> bytes:
     """

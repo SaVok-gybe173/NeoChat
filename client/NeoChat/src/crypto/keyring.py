@@ -20,7 +20,8 @@ import base64
 # Для простоты будем использовать фиксированный "секретный" ключ, но это НЕБЕЗОПАСНО.
 # Лучше запрашивать у пользователя, но тогда нужен ввод.
 
-MASTER_PASSWORD = "my_master_password_123"   # ЗАМЕНИТЕ НА СВОЙ!
+MASTER_PASSWORD = "my_master_password_123"   # ЗАМЕНИТЕ НА СВОЙ
+
 KEYRING_FILE = os.path.join(HOME, "keyring.json")
 if not os.path.isfile(KEYRING_FILE):
     with open(KEYRING_FILE, 'w', encoding="utf-8") as f:

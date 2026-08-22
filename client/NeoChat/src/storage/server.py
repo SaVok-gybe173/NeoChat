@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from network.api import getActive, getName, getRegion, getMode, ping, EXCEPTIONS
 from network.client_socket import ClientSocket
+from crypto.encrypted import encrypt_message, generate_key
 from config import HOME, setScene
 
 import os
@@ -91,7 +92,9 @@ def loadServer() -> None:       # загружает список серверо
             SERVERS.append(data)
 
 def configStoregeServer(server: "Server") -> None: # сохраняет конфигурацию сервера
-    path = os.path.join(STORAGE, f"{server.ip}-{server.port}") # структура 127.0.0.1-8080 
+    path = os.path.join(STORAGE, f"{server.ip}-{server.port}") # структура 127.0.0.1-8080
+    auth = open(os.path.join(path, "auth.bjson"))
+    
     if not os.path.isdir(path):
         os.mkdir(path)
 
@@ -106,6 +109,20 @@ def configStoregeServer(server: "Server") -> None: # сохраняет конф
                             "favorite": server.favorite, 
                             "locked": server.locked}, 
                                 indent=2))
+
+    if not os.path.isfile(auth):
+        key = generate_key(24)
+        _auth = open(auth, 'w+b', encoding=None)
+        # базовое настройка
+        _auth.write(encrypt_message(
+            json.dumps({'login': '', "password": ''}).encode("utf-8"),
+            key
+        ))
+        _auth.close()
+
+        # очистка файлов если они существуют
+
+
 
 # работа с активным сокетом
 _ClientSocket: ClientSocket
