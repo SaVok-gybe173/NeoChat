@@ -21,16 +21,18 @@ import base64
 # Лучше запрашивать у пользователя, но тогда нужен ввод.
 
 MASTER_PASSWORD = "my_master_password_123"   # ЗАМЕНИТЕ НА СВОЙ!
-
+KEYRING_FILE = os.path.join(HOME, "keyring.json")
+if not os.path.isfile(KEYRING_FILE):
+    with open(KEYRING_FILE, 'w', encoding="utf-8") as f:
+        f.write('{\n}')
 # Криптопримитивы (самодельные)
 
 def _derive_key(password: str, salt: bytes = b"") -> bytes:
     """Вырабатывает 32-байтовый ключ из пароля с помощью SHA-256."""
-    # Используем PBKDF2-подобный подход с многократным хешированием
-    key = password.encode('utf-8')
-    for _ in range(10000):  # итерации для замедления
+    key = password.encode('utf-8')                  # Используем PBKDF2-подобный подход с многократным хешированием
+    for _ in range(10000):                          # итерации для замедления
         key = hashlib.sha256(key + salt).digest()
-    return key[:32]  # 256 бит
+    return key[:32]                                 # 256 бит
 
 def _xor_encrypt(data: bytes, key: bytes) -> bytes:
     """Шифрует/дешифрует данные с помощью XOR (симметрично)."""
@@ -58,13 +60,11 @@ def _decrypt_text(encrypted_b64: str, master_password: str) -> str:
     return decrypted.decode('utf-8')
 
 # Работа с хранилищем
-
 def _load_storage() -> dict:
     """Загружает JSON-файл с зашифрованными данными."""
-    if not HOME.exists():
-        return {}
+    
     try:
-        with open(HOME, 'r') as f:
+        with open(KEYRING_FILE, 'r') as f:
             data = json.load(f)
         return data
     except (json.JSONDecodeError, IOError):
@@ -72,11 +72,10 @@ def _load_storage() -> dict:
 
 def _save_storage(data: dict) -> None:
     """Сохраняет словарь в JSON-файл."""
-    with open(HOME, 'w') as f:
+    with open(KEYRING_FILE, 'w') as f:
         json.dump(data, f, indent=2)
 
 # Публичное API
-
 def set_password(account: str, password: str, master_password: str = MASTER_PASSWORD) -> None:
     """Сохраняет пароль для аккаунта с использованием мастер-пароля."""
     data = _load_storage()
