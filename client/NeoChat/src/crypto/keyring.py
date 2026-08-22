@@ -7,8 +7,8 @@
 #
 
 from core.platform import is_android, is_ios, is_linux, is_macos, is_window
-from .logger import printLog, ERROR
-from .server import serverGet, STORAGE, serverInfoGet
+from storage.logger import printLog, ERROR
+from storage.server import serverGet, STORAGE, serverInfoGet
 from config import NAME, HOME
 import os
 import json
@@ -77,7 +77,6 @@ def _save_storage(data: dict) -> None:
 
 # Публичное API
 def set_password(account: str, password: str, master_password: str = MASTER_PASSWORD) -> None:
-    """Сохраняет пароль для аккаунта с использованием мастер-пароля."""
     data = _load_storage()
     # Шифруем пароль
     encrypted = _encrypt_text(password, master_password)
@@ -85,7 +84,6 @@ def set_password(account: str, password: str, master_password: str = MASTER_PASS
     _save_storage(data)
 
 def get_password(account: str, master_password: str = MASTER_PASSWORD) -> str | None:
-    """Возвращает пароль или None, если не найден."""
     data = _load_storage()
     encrypted = data.get(account)
     if encrypted is None:
@@ -96,7 +94,6 @@ def get_password(account: str, master_password: str = MASTER_PASSWORD) -> str | 
         return None  # неверный мастер-пароль или повреждённые данные
 
 def delete_password(account: str) -> bool:
-    """Удаляет запись. Возвращает True при успехе."""
     data = _load_storage()
     if account in data:
         del data[account]
