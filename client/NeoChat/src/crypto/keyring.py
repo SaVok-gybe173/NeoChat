@@ -8,7 +8,6 @@
 
 from core.platform import is_android, is_ios, is_linux, is_macos, is_window
 from storage.logger import printLog, ERROR
-from storage.server import serverGet, STORAGE, serverInfoGet
 from config import NAME, HOME
 import os
 import json
@@ -149,7 +148,7 @@ elif is_window():
         import win32crypt
         def set_password(account: str, password: str) -> None:
             server = serverInfoGet()
-            path = os.path.join(STORAGE, f"{server.ip}-{server.port}")
+            path = os.path.join(HOME, f"{server.ip}-{server.port}")
             encrypted = win32crypt.CryptProtectData(
                 password.encode('utf-16-le'), None, None, None, None, 0
             )
@@ -159,7 +158,7 @@ elif is_window():
         def get_password(account: str) -> str:
             try:
                 server = serverInfoGet()
-                path = os.path.join(STORAGE, f"{server.ip}-{server.port}")
+                path = os.path.join(HOME, f"{server.ip}-{server.port}")
                 with open(os.path.join(path, f"{NAME}_{account}.dat"), "rb") as f:
                     encrypted = f.read()
                 decrypted = win32crypt.CryptUnprotectData(
@@ -172,7 +171,7 @@ elif is_window():
         def delete_password(account: str) -> None:
             try:
                 server = serverInfoGet()
-                os.remove(os.path.join(STORAGE, f"{server.ip}-{server.port}"))    
+                os.remove(os.path.join(HOME, f"{server.ip}-{server.port}"))    
             except FileNotFoundError as e:
                 printLog(e, types=ERROR)
             

@@ -2,10 +2,12 @@ from dataclasses import dataclass
 from network.api import getActive, getName, getRegion, getMode, ping, EXCEPTIONS
 from network.client_socket import ClientSocket
 from crypto.encrypted import encrypt_message, generate_key
+from crypto.keyring import set_password
 from config import HOME, setScene
 
 import os
 import json
+import base64
 
 
 @dataclass
@@ -37,8 +39,8 @@ SERVERS: list[Server] = [
 
 STORAGE = os.path.join(HOME, "storage")
 
-if not os.path.isdir(STORAGE):    # проверка а наличии папки storage
-    os.mkdir(STORAGE)             # созадние папки storage
+if not os.path.isdir(STORAGE):              # проверка а наличии папки storage
+    os.mkdir(STORAGE)                       # созадние папки storage
 
 def getListStorege() -> list[str]: # возвращает список из путей в storage
     return [os.path.join(STORAGE, i) for i in os.listdir(STORAGE)]
@@ -91,10 +93,8 @@ def loadServer() -> None:       # загружает список серверо
         else:
             SERVERS.append(data)
 
-def configStoregeServer(server: "Server") -> None: # сохраняет конфигурацию сервера
-    path = os.path.join(STORAGE, f"{server.ip}-{server.port}") # структура 127.0.0.1-8080
-    auth = open(os.path.join(path, "auth.bjson"))
-    
+def configStoregeServer(server: "Server") -> None:              # сохраняет конфигурацию сервера
+    path = os.path.join(STORAGE, f"{server.ip}-{server.port}")  # структура 127.0.0.1-8080
     if not os.path.isdir(path):
         os.mkdir(path)
 
@@ -109,6 +109,15 @@ def configStoregeServer(server: "Server") -> None: # сохраняет конф
                             "favorite": server.favorite, 
                             "locked": server.locked}, 
                                 indent=2))
+    
+    updatePasswordServer(server)
+        
+def updatePasswordServer(server: Server):
+    path = os.path.join(STORAGE, f"{server.ip}-{server.port}")
+    if not os.path.isdir(path):
+        os.mkdir(path)
+    
+    auth = os.path.join(path, "auth.bjson")
 
     if not os.path.isfile(auth):
         key = generate_key(24)
@@ -121,8 +130,13 @@ def configStoregeServer(server: "Server") -> None: # сохраняет конф
         _auth.close()
 
         # очистка файлов если они существуют
+        set_password(f"{server.ip}-{server.port}", base64.b64encode(key).decode('utf-8'))
+    
+    chats = os.path.join(path, "chats")
+    profile = os.path.join(path, "profile")
 
-
+    if not os.path.isdir(chats):    os.mkdir(chats)
+    if not os.path.isdir(profile):  os.mkdir(profile)
 
 # работа с активным сокетом
 _ClientSocket: ClientSocket

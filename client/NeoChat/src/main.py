@@ -1,5 +1,6 @@
 from config import NAME, CONFIG, _setSceneLink, getPage, _setPage, THEME_MODS
 from storage.logger import printLog
+from storage.server import SERVERS, updatePasswordServer
 from ui.server import ServerMenu
 from ui.entrance import EntranceServer
 from ui.registration import RegistrationMenu
@@ -18,6 +19,9 @@ class Main:
     def __init__(self, page: ft.Page):
         self.page = page
         _setPage(page)
+        # обновление всех ключей
+        for ser in SERVERS:
+            updatePasswordServer(ser)
         page.title = NAME
         page.window.width = CONFIG.getint("WINDOW", "width")
         page.window.height = CONFIG.getint("WINDOW", "height")
