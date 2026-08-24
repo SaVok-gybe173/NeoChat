@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from network.api import getActive, getName, getRegion, getMode, ping, EXCEPTIONS
 from network.client_socket import ClientSocket
 from crypto.encrypted import encrypt_message, generate_key
-from crypto.keyring import set_password
+from crypto.keyring import set_password, get_password
 from config import HOME, setScene
 
 import os
@@ -108,7 +108,7 @@ def configStoregeServer(server: "Server") -> None:              # сохраня
                             "status": server.status, 
                             "favorite": server.favorite, 
                             "locked": server.locked}, 
-                                indent=2))
+                        indent=2))
     
     updatePasswordServer(server)
         
@@ -131,12 +131,16 @@ def updatePasswordServer(server: Server):
 
         # очистка файлов если они существуют
         set_password(f"{server.ip}-{server.port}", base64.b64encode(key).decode('utf-8'))
+
+        # докодирование файла и проверка
+        assert base64.b64decode(get_password(f"{server.ip}-{server.port}")) == key
     
     chats = os.path.join(path, "chats")
     profile = os.path.join(path, "profile")
 
     if not os.path.isdir(chats):    os.mkdir(chats)
     if not os.path.isdir(profile):  os.mkdir(profile)
+    
 
 # работа с активным сокетом
 _ClientSocket: ClientSocket
