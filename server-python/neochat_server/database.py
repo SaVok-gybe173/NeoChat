@@ -60,7 +60,7 @@ def _write_json_atomic(path: Path, data: dict) -> None:
         json.dump(data, f, indent=2, ensure_ascii=False)
     os.replace(tmp, path)
 
-
+# база данных
 class JsonDatabase:
     def __init__(self, users_file: str, messages_file: str) -> None:
         self.users_file = Path(users_file)
@@ -82,6 +82,7 @@ class JsonDatabase:
         self._flush_task = asyncio.create_task(self._flush_loop())
         return True
 
+    # закрытие
     async def close(self) -> None:
         if self._flush_task is not None:
             self._flush_task.cancel()
@@ -130,6 +131,7 @@ class JsonDatabase:
 
     # -- users ---------------------------------------------------
 
+    # добавление пользователя
     def add_user(self, user: User) -> bool:
         for u in self._users:
             if u.get("username") == user.username:
@@ -145,6 +147,7 @@ class JsonDatabase:
         self._dirty_users = True
         return True
 
+    # Возвращает дата класс User
     def get_user(self, username: str) -> Optional[User]:
         for u in self._users:
             if u.get("username") == username:
@@ -157,6 +160,7 @@ class JsonDatabase:
                 )
         return None
 
+    # возвращает пользователя по почте
     def get_user_by_email(self, email: str) -> Optional[User]:
         for u in self._users:
             if u.get("email") == email:
@@ -169,6 +173,7 @@ class JsonDatabase:
                 )
         return None
 
+    # обновление публичного ключа
     def update_user_public_key(self, username: str, public_key: str) -> bool:
         for u in self._users:
             if u.get("username") == username:
@@ -177,6 +182,7 @@ class JsonDatabase:
                 return True
         return False
 
+    # возвращает публичный ключ пользователя
     def get_user_public_key(self, username: str) -> Optional[str]:
         for u in self._users:
             if u.get("username") == username:
@@ -188,6 +194,7 @@ class JsonDatabase:
 
     # -- messages ---------------------------------------------------
 
+    # добавляет новое сообщение
     def add_message(self, msg: Message) -> int:
         msg_id = self._next_msg_id
         self._next_msg_id += 1
@@ -207,6 +214,7 @@ class JsonDatabase:
         self._dirty_messages = True
         return msg_id
 
+    # Возращает сообщение
     def get_messages(
         self, user1: str, user2: str, limit: int = 0, offset: int = 0
     ) -> List[dict]:

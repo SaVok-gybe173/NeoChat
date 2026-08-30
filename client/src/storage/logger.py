@@ -9,7 +9,7 @@ ERROR = '[ERROR]'                   # ошибка
 ERROR_LOGGER = "[ERROR LOGGER]"     # ошибка связана с работой логовой системой
 INFO = "[INFO]"                     # лог инфо
 INFO_LOGGER = "[INFO LOGGER]"       # лог инфо связан с работой логовой системой
-
+REQUESTS_INFO = "[REQUESTS INFO]"
 
 _is_open_file: bool = False         # открыт ли фаил
 _open_file: TextIOWrapper           # открытый текстовый фаил .log или другой с праметром 'a'

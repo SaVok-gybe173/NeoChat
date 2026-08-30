@@ -1,25 +1,50 @@
 from storage.server import serverSet, serverGet, serverIsActiv, serverClose
 from storage.message.bd import setToken, getToken, getActiveChatId, getUsernameChatId, getChats, addChats, Chat
-from storage.logger import printLog, ERROR
-from config import setScene
+from storage.logger import printLog, ERROR, REQUESTS_INFO
+from config import setScene, DEBUGGING_REQUESTS_LOG
 from core.fingerprint import get_device_fingerprint
-from typing import Callable, Dict, Any
+from typing import Callable, Dict, Any, Generator
 from .error import (RegistrationEmailError, RegistrationUsernameError, RegistrationError,
                     EntranceInvalidError, EntranceVerifiedError, EntranceError,
                     SendMessageError
                     )
 
-def new_message(data: Dict[str, str]) -> None:
-    ...
 
-PUSH_CALLABLE: Dict[str, Callable] = {"new_message": new_message}
+def new_message(data: Dict[str, str]) -> None: 
+    ... # 
+PUSH_CALLABLE: Dict[str, Callable] = {"new_message": new_message} # пуш типы
+
+def coroutine(func: Callable) ->  Callable:
+    def start(*args, **kargs) -> Generator:
+        get = func(*args, **kargs)
+        next(get)
+        return get
+    return start
+
+# логгер запросов
+@coroutine
+def requests_log(name, logger: str = REQUESTS_INFO) -> Generator:
+    if DEBUGGING_REQUESTS_LOG:
+        data = yield
+        printLog("start >", name, '>', data)
+        data = yield
+        printLog("finish >", name, '>', data)
+        yield
+    else:
+        yield ; yield ; yield
 
 def serverRegistration(username: str, password: str, email: str) -> bool:           # выполняет регестрацию
     printLog('регестрация >', username)
+    requests:  Generator = requests_log("serverRegistration")
+    requests.send(dict(username=username, password="*"*len(password), email=email))
+
     try:
         data = serverGet().send_request("register", username=username, password=password, email=email)
+        requests.send(data )
+        requests.close()
     except ConnectionError as e:
         printLog("client api >", e, types=ERROR)
+        requests.close()
         raise RegistrationError()
     
     if data.get("status") == "error":
@@ -54,10 +79,16 @@ def serverRegistration(username: str, password: str, email: str) -> bool:       
 
 def serverEntrance(username: str, password: str) -> bool:                     # выполняеться вход и добвляеться токен
     printLog('вход в аккаунт >', username)
+    requests:  Generator = requests_log("serverEntrance")
+    requests.send(dict(username=username, password='*'*len(password), device=get_device_fingerprint()))
+
     try:
         data = serverGet().send_request("login", username=username, password=password, device=get_device_fingerprint())
+        requests.send(str(data) )
+        requests.close()
     except ConnectionError as e:
         printLog("client api >", e, types=ERROR)
+        requests.close()
         raise EntranceError()
     
     if data.get("status") == "error":
@@ -90,14 +121,20 @@ def serverEntrance(username: str, password: str) -> bool:                     # 
         return False
 
 # отправка сообщения
-def serverSendMessage(mess: str) -> None:
+def serverSendMessage(mess: str) -> bool:
+    requests:  Generator = requests_log("serverSendMessage")
+    requests.send(dict(token = getToken(), to = getUsernameChatId(id), content = mess))
+
     id = getActiveChatId()
     if id is None: raise SendMessageError()
 
     try:
         data = serverGet().send_request("send_message", token = getToken(), to = getUsernameChatId(id), content = mess)
+        requests.send(str(data) )
+        requests.close()
     except ConnectionError as e:
         printLog("client api >", e, types=ERROR)
+        requests.close()
         raise SendMessageError()
 
     if data['status'] == "ok":
@@ -107,10 +144,16 @@ def serverSendMessage(mess: str) -> None:
 
 # обновление списка чатов
 def updateListChats() -> bool:
+    requests:  Generator = requests_log("updateListChats")
+    requests.send(f"{'{'}token: {getToken()}{'}'}")
     
     try:
         data: Dict[str, str | list] = serverGet().send_request("get_users", token = getToken())
+        requests.send(str(data) )
+        requests.close()
     except ConnectionError as e:
+        requests.close()
+        printLog("client api >", e, types=ERROR)
         return False
 
     chats = getChats()
@@ -121,7 +164,12 @@ def updateListChats() -> bool:
             if not i in usernames:
                 addChats(Chat(int.from_bytes(i.encode("ascii")),
                               i, i))
-
+# пущ сообщения
+#
+# updatePush - вызывает пуш функции
+# delPush - удалет одно или все пуш сообщения
+# setPush - добавляет пуш сообщение
+#
 # обновление сообщений
 type Data = Any
 def updatePush(msg: Dict[str, Data]):

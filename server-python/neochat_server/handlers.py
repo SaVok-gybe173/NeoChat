@@ -60,6 +60,7 @@ def _validate_email(email: str) -> Optional[dict]:
     return None
 
 
+# класс действий для пользователя
 class Handlers:
     def __init__(self, db: JsonDatabase) -> None:
         self.db = db

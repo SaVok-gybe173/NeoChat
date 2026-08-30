@@ -52,7 +52,6 @@ class EntranceServer:
                 error_text.visible = False
                 self.setScene("ChatMenu")
             except Exception as e:
-                print(e, type(e))
                 error_text.visible = True
                 error_text.value = str(e)
 

@@ -28,6 +28,7 @@ class Server:
         self._server: asyncio.AbstractServer | None = None
         self._sessions: set[Session] = set()
 
+    # запуск
     async def start(self) -> None:
         self._server = await asyncio.start_server(self._handle_client, self.host, self.port)
         logger.info(f"Server listening on {self.host}:{self.port}")
@@ -47,6 +48,7 @@ class Server:
         for session in sessions:
             await session.close()
 
+    # цикл клиента
     async def _handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:

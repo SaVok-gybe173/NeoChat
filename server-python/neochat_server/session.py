@@ -15,6 +15,7 @@ from typing import Optional
 from . import protocol
 
 
+# сесия пользователя
 class Session:
     def __init__(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         self.reader = reader

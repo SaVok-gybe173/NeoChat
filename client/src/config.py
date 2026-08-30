@@ -1,5 +1,5 @@
-# отладка
-DEBUGGING = True
+DEBUGGING = True                # отладка (выводит в консоль сообщения об ошибках)
+DEBUGGING_REQUESTS_LOG = True   # добавляет все запросы и ответы в лог фаил
 
 from core.platform import is_android, is_ios
 import configparser
@@ -31,7 +31,7 @@ NAME = "Neo Chat"
 # FLET_APP_STORAGE_DATA - директория, куда приложению разрешено писать
 # на Android/iOS/desktop. Локально (flet run) тоже работает и указывает
 # на <project>/.flet/storage/data. Фолбэк на "." на случай, если
-if is_android() or is_ios() or DEBUGGING:
+if (is_android() or is_ios()) or DEBUGGING:
     _APP_STORAGE = os.getenv("FLET_APP_STORAGE_DATA", ".")  # можно заменить на os.path.join(os.path.expanduser('~'), "NeoChat"), но на телефонах не будет работать
 else:
     _APP_STORAGE = os.path.expanduser('~')
