@@ -1,0 +1,5 @@
+# No third-party dependencies — this server uses only the Python standard
+# library (asyncio, json, hashlib, secrets, configparser, logging).
+#
+# Requires Python 3.10+ (uses the `:=` walrus operator and match-style
+# union type hints in a couple of places).
