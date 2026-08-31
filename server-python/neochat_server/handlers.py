@@ -82,6 +82,7 @@ class Handlers:
 
     # -- actions ---------------------------------------------------
 
+    # регестрация
     async def handle_register(self, req: dict) -> dict:
         if not all(k in req for k in ("username", "password", "email")):
             return _error("missing_fields", "Missing username, password or email")
@@ -118,6 +119,7 @@ class Handlers:
         logger.warning(f"Registration failed (exists): {username}")
         return _error("username_taken", "Username already exists")
 
+    # вход
     async def handle_login(self, req: dict, session: Optional[Session]) -> dict:
         if not all(k in req for k in ("username", "password")):
             return _error("missing_fields", "Missing username or password")

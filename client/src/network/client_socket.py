@@ -37,6 +37,11 @@ class ClientSocket:
             self.sock.settimeout(self.timeout)
             self.sock.connect((host, port))
             self.sock.settimeout(None)
+            # TCP keepalive lets the OS detect a genuinely dead peer (cable
+            # pulled, box crashed, NAT dropped the mapping) without us having
+            # to guess at an idle timeout for the app-level protocol, which
+            # is naturally silent for long stretches (no push, no requests).
+            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
             self.running = True
             self.listener_thread = threading.Thread(target=self._listen_loop, daemon=True)
             self.listener_thread.start()
@@ -163,10 +168,33 @@ class ClientSocket:
         return json.loads(data.decode("utf-8"))
 
     def _recv_all(self, n: int) -> bytes | None:
-        """Читать ровно n байт с таймаутом 10 секунд."""
+        """
+        Читать ровно n байт. Блокируется, пока не придут данные, пир не
+        закроет соединение или сокет не будет закрыт из другого потока
+        (через close()) — без искусственного тайм-аута.
+
+        ВАЖНО: этот метод вызывается из фонового потока-слушателя
+        (_listen_loop), который простаивает бОльшую часть времени —
+        сообщения (в т.ч. push) приходят нерегулярно, иногда с паузами
+        в минуты. Раньше здесь стоял self.sock.settimeout(10.0): если за
+        10 секунд ничего не приходило, recv() поднимал socket.timeout,
+        _recv_all тихо возвращал None, и _listen_loop интерпретировал это
+        как обрыв соединения и завершал поток — при этом сам TCP-сокет
+        оставался открытым. Следующий send_request() успешно отправлял
+        запрос (сокет ведь жив), но ответ было уже некому забрать: поток,
+        читавший входящие сообщения, уже умер. Через self.timeout секунд
+        response_queue.get() поднимал queue.Empty -> "Request timeout".
+        Именно это и проявлялось как "иногда работает, иногда нет" —
+        зависело от того, был ли перерыв между запросами больше 10 секунд.
+
+        Реальный обрыв соединения по-прежнему обнаруживается штатно:
+        recv() возвращает b"" при закрытии пиром, либо поднимает OSError,
+        если сокет закрыли локально (close()) или порвался TCP. TCP
+        keepalive (включён в connect()) обнаруживает "тихо умерших" пиров
+        без явного закрытия соединения.
+        """
         if self.sock is None:
             return None
-        self.sock.settimeout(10.0)
         try:
             buf = b""
             while len(buf) < n:
@@ -175,10 +203,5 @@ class ClientSocket:
                     return None
                 buf += chunk
             return buf
-        except socket.timeout:
+        except OSError:
             return None
-        finally:
-            try:
-                self.sock.settimeout(None)
-            except OSError:
-                pass
