@@ -4,10 +4,7 @@ from storage.logger import printLog, ERROR, REQUESTS_INFO
 from config import setScene, DEBUGGING_REQUESTS_LOG
 from core.fingerprint import get_device_fingerprint
 from typing import Callable, Dict, Any, Generator
-from .error import (RegistrationEmailError, RegistrationUsernameError, RegistrationError,
-                    EntranceInvalidError, EntranceVerifiedError, EntranceError,
-                    SendMessageError
-                    )
+from .error import *
 
 
 def new_message(data: Dict[str, str]) -> None: 
@@ -53,8 +50,9 @@ def serverRegistration(username: str, password: str, email: str) -> bool:       
                 raise RegistrationUsernameError()       
             elif data.get('reason') == "username_taken":
                 raise RegistrationEmailError()
-            else:
-                raise RegistrationError()
+            elif data.get('reason') == 'invalid_email':
+                raise RegistrationInvalidEmail()
+            raise RegistrationError()
         elif "message" in data:
             match data["message"]:
                 case "Missing username, password or email":
@@ -97,8 +95,8 @@ def serverEntrance(username: str, password: str) -> bool:                     # 
                 raise EntranceInvalidError()
             elif data.get('reason') == "device_not_verified":
                 raise EntranceVerifiedError()
-            else:
-                raise EntranceError()
+            raise EntranceError()
+        
         elif "message" in data:
             match data["message"]:
                 case "Missing username or password":

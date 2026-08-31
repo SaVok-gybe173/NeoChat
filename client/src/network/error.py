@@ -11,6 +11,11 @@ class RegistrationEmailError(Exception):
         # занята почта
         super().__init__(getLan("error", "RegistrationEmailError"))
 
+class RegistrationInvalidEmail(Exception):
+    def __init__(self):
+        # Не верный формат почты
+        super().__init__(getLan("error", "RegistrationInvalidEmail"))
+
 class RegistrationError(Exception):
     def __init__(self):
         # просто неизвесная ошибка

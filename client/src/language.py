@@ -88,6 +88,7 @@ LAN: Dict[str, Dict[str, Dict[str, str] | str]] = {
         "error":{
             "RegistrationUsernameError": "Имя пользователя уже существует",
             "RegistrationEmailError": "Учетная запись с этим адресом электронной почты уже существует",
+            "RegistrationInvalidEmail": "Неверный формат электронной почты",
             "RegistrationError": "Неизвесня ошибка",
             "EntranceInvalidError": "Неверное имя пользователя или пароль",
             "EntranceVerifiedError": "Обнаружено новое устройство, требуется подтверждение по электронной почте",
