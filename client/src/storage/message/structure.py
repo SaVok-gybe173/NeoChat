@@ -144,7 +144,7 @@ class File(Message):            # фаил
     file: str | None = None     # путь к файлу если есть
     type: str | None = "file"   # тип
     title: str = ''             # имя
-    sub = str = ''              # "3.1 KB · Python"
+    sub: str = ''               # "3.1 KB · Python"
     id_file: int = 0            # id файла
 
     def draw(self, page):
