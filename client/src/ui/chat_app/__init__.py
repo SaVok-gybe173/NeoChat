@@ -1,1 +1,1 @@
-from .chas import ChatMenu
+from .chats import ChatMenu
