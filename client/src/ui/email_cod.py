@@ -8,7 +8,7 @@ PANEL_BORDER = "#262b35"
 MUTED = "#8a91a3"
 TEXT = "#eef1f6"
 DANGER = "#ff6b6b"
-SUCCESS = "#4caf50"
+SUCCESS = "#4caf59"
 
 class CodeMenu:
     def __init__(self, setScene: Callable):
@@ -64,7 +64,7 @@ class CodeMenu:
         verify_button = ft.Button(
             content=ft.Text(
                 getLan("confirm"),
-                color="#ffffff",
+                color="#0f0404",
                 weight=ft.FontWeight.W_600,
                 size=14.5,
             ),

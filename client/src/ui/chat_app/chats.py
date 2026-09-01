@@ -95,122 +95,118 @@ def render_message(m: Message, chat: Chat):
     )
 
 def build_chat(chat_id):
-        page = getPage()
-        chat = getChatId(chat_id)
-        if not(chat.render is None):
-            page.run_task(chat.render.content.controls[1].content.scroll_to, offset=-1, duration=0)
-            return chat.render
-        elif not chat:
-            return build_empty()
-
-        header = ft.Container(
-            content=ft.Row(
-                controls=[
-                    ft.IconButton(icon=ft.Icons.ARROW_BACK, icon_color=TEXT, #visible=getIsNarrow(),
-                                   on_click=lambda e: go_back()),
-                    ft.Container(
-                        content=ft.Row(
-                            controls=[
-                                avatar(chat, is_group=chat.is_group),
-                                ft.Column(
-                                    controls=[
-                                        ft.Text(chat.title, size=14.5, weight=ft.FontWeight.W_600, color=TEXT),
-                                        ft.Text(
-                                            f"{len(chat.members)} участников" if chat.is_group else chat.status,
-                                            size=12, color=TEXT_FAINT,
-                                        ),
-                                    ],
-                                    spacing=0,
-                                ),
-                            ],
-                            spacing=12,
-                        ),
-                        on_click=lambda e: open_profile(chat.id),
-                        ink=True,
-                        border_radius=8,
-                        padding=ft.Padding.symmetric(horizontal=4, vertical=2),
-                    ),
-                ],
-                spacing=4,
-            ),
-            padding=ft.Padding.symmetric(horizontal=16, vertical=14),
-            border=ft.Border.only(bottom=ft.BorderSide(1, BORDER)),
-        )
-        
-        messages_list = ft.ListView(
-            controls=[render_message(m, chat) for m in chat.messages],
-            spacing=16,
-            auto_scroll=True,
-            expand=True,
-            
-            
-        )
-        page.run_task(messages_list.scroll_to, offset=-1, duration=0)
-        message_field = ft.TextField(
-            hint_text="Написать сообщение…",
-            border_color=BORDER,
-            bgcolor=PANEL_2,
-            color=TEXT,
-            border_radius=12,
-            content_padding=ft.Padding.symmetric(horizontal=14, vertical=10),
-            multiline=True,
-            shift_enter=True,
-            min_lines=1,
-            max_lines=6,
-            expand=True,
-            autofocus=True,
-        )
-
-        def handle_send(e): # добавление сообщение
-            value = (message_field.value or "").strip()
-            if not value:
-                return
-            text = Text(
-                id=f"m{len(chat.messages) + 1}",
-                sender="me",
-                time=datetime.now().strftime("%H:%M"),
-                type="text",
-                text=value,
-            )
-            chat.messages.append(text)
-            message_field.value = ''
-            messages_list.controls.append(render_message(text, chat))
-            #page.run_task(messages_list.scroll_to, offset=-1, duration=0)
-
-        message_field.on_submit = handle_send
-
-        composer = ft.Container(
-            content=ft.Row(
-                controls=[
-                    message_field,
-                    ft.IconButton(
-                        icon=ft.Icons.SEND_ROUNDED,
-                        icon_color="#ffffff",
-                        bgcolor=ACCENT,
-                        icon_size=18,
-                        on_click=handle_send,
-                    ),
-                ],
-                spacing=10,
-                vertical_alignment=ft.CrossAxisAlignment.END,
-            ),
-            padding=ft.Padding.symmetric(horizontal=20, vertical=14),
-            border=ft.Border.only(top=ft.BorderSide(1, BORDER)),
-        )
-        chat.render = ft.Container(
-            content=ft.Column(
-                controls=[
-                    header,
-                    ft.Container(content=messages_list, padding=20, expand=True),
-                    composer,
-                ],
-                spacing=0,
-                expand=True,
-            ),
-            expand=True,
-            bgcolor=BG,
-        )
+    page = getPage()
+    chat = getChatId(chat_id)
+    if not(chat.render is None):
+        page.run_task(chat.render.content.controls[1].content.scroll_to, offset=-1, duration=0)
         return chat.render
+    elif not chat:
+        return build_empty()
+    header = ft.Container(
+        content=ft.Row(
+            controls=[
+                ft.IconButton(icon=ft.Icons.ARROW_BACK, icon_color=TEXT, #visible=getIsNarrow(),
+                               on_click=lambda e: go_back()),
+                ft.Container(
+                    content=ft.Row(
+                        controls=[
+                            avatar(chat, is_group=chat.is_group),
+                            ft.Column(
+                                controls=[
+                                    ft.Text(chat.title, size=14.5, weight=ft.FontWeight.W_600, color=TEXT),
+                                    ft.Text(
+                                        f"{len(chat.members)} участников" if chat.is_group else chat.status,
+                                        size=12, color=TEXT_FAINT,
+                                    ),
+                                ],
+                                spacing=0,
+                            ),
+                        ],
+                        spacing=12,
+                    ),
+                    on_click=lambda e: open_profile(chat.id),
+                    ink=True,
+                    border_radius=8,
+                    padding=ft.Padding.symmetric(horizontal=4, vertical=2),
+                ),
+            ],
+            spacing=4,
+        ),
+        padding=ft.Padding.symmetric(horizontal=16, vertical=14),
+        border=ft.Border.only(bottom=ft.BorderSide(1, BORDER)),
+    )
+    
+    messages_list = ft.ListView(
+        controls=[render_message(m, chat) for m in chat.messages],
+        spacing=16,
+        auto_scroll=True,
+        expand=True,
+        
+        
+    )
+    page.run_task(messages_list.scroll_to, offset=-1, duration=0)
+    message_field = ft.TextField(
+        hint_text="Написать сообщение…",
+        border_color=BORDER,
+        bgcolor=PANEL_2,
+        color=TEXT,
+        border_radius=12,
+        content_padding=ft.Padding.symmetric(horizontal=14, vertical=10),
+        multiline=True,
+        shift_enter=True,
+        min_lines=1,
+        max_lines=6,
+        expand=True,
+        autofocus=True,
+    )
+    def handle_send(e): # добавление сообщение
+        value = (message_field.value or "").strip()
+        if not value:
+            return
+        text = Text(
+            id=f"m{len(chat.messages) + 1}",
+            sender="me",
+            time=datetime.now().strftime("%H:%M"),
+            type="text",
+            text=value,
+        )
+        chat.messages.append(text)
+        message_field.value = ''
+        messages_list.controls.append(render_message(text, chat))
+        #page.run_task(messages_list.scroll_to, offset=-1, duration=0)
+    message_field.on_submit = handle_send
+    composer = ft.Container(
+        content=ft.Row(
+            controls=[
+                message_field,
+                ft.IconButton(
+                    icon=ft.Icons.SEND_ROUNDED,
+                    icon_color="#ffffff",
+                    bgcolor=ACCENT,
+                    icon_size=18,
+                    on_click=handle_send,
+                ),
+            ],
+            spacing=10,
+            vertical_alignment=ft.CrossAxisAlignment.END,
+        ),
+        padding=ft.Padding.symmetric(horizontal=20, vertical=14),
+        border=ft.Border.only(top=ft.BorderSide(1, BORDER)),
+    )
+    chat.render = ft.Container(
+        content=ft.Column(
+            controls=[
+                header,
+                ft.Container(content=messages_list, padding=20, expand=True),
+                composer,
+            ],
+            spacing=0,
+            expand=True,
+        ),
+        expand=True,
+        bgcolor=BG,
+    )
+    return chat.render
 
 
 # открытие чата
