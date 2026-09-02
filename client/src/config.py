@@ -47,9 +47,10 @@ if not os.path.isdir(LOG_PATH):     os.makedirs(LOG_PATH)
 if not os.path.isfile(CONFIG_PATH):
     with open(CONFIG_PATH, 'w', encoding="utf-8") as f:
         f.write("""
-[DATABASE]
-host = 127.0.0.1
-port = 8080
+[autologin]
+is = 0
+host = 
+port = 
 
 [WINDOW]
 mode = 0
