@@ -1,6 +1,6 @@
 from config import NAME, CONFIG, _setSceneLink, getPage, _setPage, THEME_MODS
-from storage.logger import printLog
-from storage.server import SERVERS, updatePasswordServer
+from storage.logger import printLog, init as init_logger
+from storage.server import SERVERS, updatePasswordServer, init as init_server
 from ui.server import ServerMenu
 from ui.entrance import EntranceServer
 from ui.registration import RegistrationMenu
@@ -18,6 +18,8 @@ class Main:
 
     def __init__(self, page: ft.Page):
         self.page = page
+        init_logger()
+        init_server()
         _setPage(page)
         # обновление всех ключей
         for ser in SERVERS:

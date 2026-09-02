@@ -9,11 +9,6 @@ from typing import List
 
 import os
 
-[
-    [],
-    []
-]
-
 # КОНСТАНТЫ
 
 ERROR           = "[ERROR]"             # тип ошибки
@@ -243,5 +238,6 @@ def getLogList() -> list[str]:
     else:
         return _log_list_not_file
 
-# стандарт - создает фаил
-createFileLog()
+def init(): # инцилизация всего
+    # стандарт - создает фаил
+    createFileLog()

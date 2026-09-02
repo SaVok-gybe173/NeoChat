@@ -1,3 +1,7 @@
+"""
+Модуль для работы со списком серверов
+"""
+
 from dataclasses import dataclass
 from network.api import getActive, getName, getRegion, getMode, ping, EXCEPTIONS
 from network.client_socket import ClientSocket
@@ -37,18 +41,35 @@ SERVERS: list[Server] = [
     Server("127.0.0.1", 8080, "localhost", "null", "Main", 10, locked=True, favorite=True),
 ]
 
+# обновление папок - создание если их нету
 STORAGE = os.path.join(HOME, "storage")
 
 if not os.path.isdir(STORAGE):              # проверка а наличии папки storage
     os.mkdir(STORAGE)                       # созадние папки storage
 
-def getListStorege() -> list[str]: # возвращает список из путей в storage
+def getListStorege() -> list[str]:
+    """
+    Возвращает список из путей в storage
+    """
     return [os.path.join(STORAGE, i) for i in os.listdir(STORAGE)]
 
-def addServer(ip: str, port: str) -> None:  # добавляет сервер
-    port = int(port)
+def addServer(ip: str, port: str | int) -> None:  # добавляет сервер
+    """
+    Добавляет сервер в глобальный список SERVERS
+
+    Args:
+        ip (str): ip адресс сервера или его домен
+        port (str | int): порт по которому можно подключиться испольпользуя протокол с гитхаба https://github.com/SaVok-gybe173/NeoChat/tree/main/server
+    Raise:
+        ValueError: ошибка если порт не верный
+    """
+    # проверка на правельность порта
+    if not isinstance(port, int):
+        port = int(port)    # ValueError
     if not port > 0 and port <= 65535:      # проверка на существующии порты
         raise ValueError("port слишком маленький или большой")
+
+    # обновление состоянии сервера
     status = "online" if getActive(ip, port) else "offline"
     ping = 0                    
     try:
@@ -60,13 +81,23 @@ def addServer(ip: str, port: str) -> None:  # добавляет сервер
     except Exception:
         status = "offline"
 
-    ser = Server(ip, port , getName(ip, port ), getRegion(ip), getMode(ip, port), status=status, ping=ping)
-    configStoregeServer(ser)
-    SERVERS.append(ser)
+    ser = Server(ip, port , getName(ip, port ), getRegion(ip), getMode(ip, port), status=status, ping=ping) # добавление сервера:
+    configStoregeServer(ser)                                                                                #   в базу данных
+    SERVERS.append(ser)                                                                                     #   в список
 
 def updateServer(isSave: bool = True) -> None:     # обновление пинга и мета данных
+    """
+    Обновление пинга и мета данных
+        - пинг
+        - активен ли сервере
+        - регеон
+        - название mode
+    
+    Args:
+        isSave (bool): нкжно ли сохранить измененые параметры сервера в базу данных
+    """
     for ser in SERVERS:
-        #ser.name = getName(ser.ip, ser.port )
+        #ser.name = getName(ser.ip, ser.port ) # название, но пользователь может указать свое
         ser.region = getRegion(ser.ip)
         ser.mode = getMode(ser.ip, ser.port)
         try:
@@ -77,23 +108,47 @@ def updateServer(isSave: bool = True) -> None:     # обновление пин
                 ser.status = "offline"
         except Exception:
             ser.status = "offline"
-        if isSave:
+        if isSave:  # сохранение в базу данных
             configStoregeServer(ser)
 
-def loadServer() -> None:       # загружает список серверов из getListStorege() -> list[str]
+def loadServer() -> None:
+    """
+    Загружает список серверов из getListStorege() -> list[str]
+    """
+    # перебор списка из базы данных
     for ser in getListStorege():
-        try:
+        try:    # проверка на наличие конфигурационного файла
             with open(os.path.join(ser, "config.json"), "r", encoding="utf-8") as f:
                 data = Server(**json.loads(f.read()))
         except Exception:
-            continue
+            continue    # пропускаем если фаил не найден
         for i in SERVERS:
             if i.ip == data.ip and i.port == data.port:
                 break # не добовляем если сервер уже есть
         else:
             SERVERS.append(data)
 
-def configStoregeServer(server: "Server") -> None:              # сохраняет конфигурацию сервера
+def configStoregeServer(server: "Server") -> None:
+    """
+    Cохраняет конфигурацию сервера в STORAGE.
+    формат: ip-port
+
+    Args:
+        server (Server): обьект найстроек сервера
+
+    Формат json файла
+    >>> {
+        "ip": server.ip,
+        "port": server.port,
+        "name": server.name, 
+        "region": server.region,
+        "mode": server.mode, 
+        "ping": server.ping,
+        "status": server.status, 
+        "favorite": server.favorite, 
+        "locked": server.locked
+        }
+    """
     path = os.path.join(STORAGE, f"{server.ip}-{server.port}")  # структура 127.0.0.1-8080
     if not os.path.isdir(path):
         os.mkdir(path)
@@ -113,10 +168,15 @@ def configStoregeServer(server: "Server") -> None:              # сохраня
     updatePasswordServer(server)
         
 def updatePasswordServer(server: Server):
+    """
+    Создает фаил с паролем если его нету.
+
+    Так же он создает файлы и папки которые не были созданы.
+    """
     path = os.path.join(STORAGE, f"{server.ip}-{server.port}")
     if not os.path.isdir(path):
         os.mkdir(path)
-    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
     auth = os.path.join(path, "auth.bjson")
 
     if not os.path.isfile(auth):
@@ -143,17 +203,26 @@ def updatePasswordServer(server: Server):
     
 
 # работа с активным сокетом
-_ClientSocket: ClientSocket
-_server_info: Server
+_ClientSocket: ClientSocket # активное подключение
+_server_info: Server        # информация об сервере
 def serverIsActiv() -> bool:
+    """
+    Возвращет bool значение подключен ли клиент к сервру.
+    """
     global _ClientSocket
     return _ClientSocket._closed
 
 def serverGet() -> ClientSocket:
+    """
+    Возвращает сокет соединения.
+    """
     global _ClientSocket
     return _ClientSocket
 
 def serverSet(client_socket: ClientSocket, server_info: Server) -> None:
+    """
+    Устанавливает в глобальные переменную сокет и информацию о сервере.
+    """
     global _ClientSocket, _server_info
     try:
         setScene("EntranceServer")
@@ -162,22 +231,38 @@ def serverSet(client_socket: ClientSocket, server_info: Server) -> None:
     _ClientSocket = client_socket
 
 def serverClose() -> None:
+    """
+    Закрывает текущие соединение.
+    """
     global _ClientSocket
     _ClientSocket.close()
 
 def serverInfoGet() -> Server:
+    """
+    Возвращает информацию об севере к которому подключен клиент.
+    """
     global _server_info
     return _server_info
 
 # происходит сейчас ли подключение
 def isConectGet() -> bool:
+    """
+    Глобальная переменная определяющая происходит ли сейчас подключение к сервру
+
+    Возвращает bool значение
+    """
     global _is_conect
     return _is_conect
 
 def isConectSet(is_conect: bool) -> None:
+    """
+    Глобальная переменная определяющая происходит ли сейчас подключение к сервру
+
+    Принимает bool значение
+    """
     global _is_conect
     _is_conect = is_conect
 
-isConectSet(False)
-serverSet(ClientSocket(), Server("127.0.0.1", 0, "null", "null", "null"))
-loadServer() # загружает конфигурацию при страте
+def init(): # инцилизация всего
+    isConectSet(False)
+    loadServer() # загружает конфигурацию при страте
